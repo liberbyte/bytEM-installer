@@ -152,7 +152,7 @@ A DEID is usually a URL.
 For example:
 
 ```text
-https://waterworks.example/de/frankfurt/water-quality
+https://cities.app/de/bb/ahrensfelde
 ```
 
 The DEID helps identify and find the data in bytEM.
@@ -164,7 +164,7 @@ A **Class** is a category that describes what type of data is stored in a Supply
 For example:
 
 ```text
-water-quality
+ahrensfelde
 ```
 
 The Class helps categorize and identify your data.
@@ -399,7 +399,7 @@ This also displays the DEID template.
 <img width="760" alt="Set DEID from Command tab" src="https://github.com/user-attachments/assets/d0f09d9a-5b50-4378-8f2c-afd6a6bfd6fb" />
 
 > [!NOTE]
-> The DEID must contain the full domain URL, for example: `https://bytem.your.domain/de/frankfurt/water-quality`. Make sure to use the correct domain for your instance.
+> The DEID must contain the full domain URL, for example: `https://bytem.your.domain/de/bb/ahrensfelde`. Make sure to use the correct domain for your instance.
 
 
 #### DEID Example
@@ -409,7 +409,7 @@ A DEID is usually a URL that identifies your data.
 For example:
 
 ```text
-https://waterworks.example/de/frankfurt/water-quality
+https://cities.app/de/bb/ahrensfelde
 ```
 
 Choose a meaningful URL that clearly describes your data.
@@ -454,7 +454,7 @@ This also displays the Class template.
 #### Class Example
 
 ```text
-water-quality
+ahrensfelde
 ```
 
 
@@ -543,7 +543,7 @@ The Reference DEID is now included in your supplied data.
 A Reference can contain a DEID such as:
 
 ```text
-https://waterworks.example/de/frankfurt/water-quality
+https://cities.app/de/he/babenhausen
 ```
 
 This DEID identifies data that can be found and exchanged later.
@@ -739,7 +739,7 @@ find <deid_url>
 For example:
 
 ```bash
-find https://waterworks.example/de/frankfurt/water-quality
+find https://cities.app/de/he/babenhausen
 ```
 
 The **Find** action shows information about the referenced data.
@@ -761,7 +761,7 @@ exchange-data <deid_url>
 For example:
 
 ```bash
-exchange-data https://waterworks.example/de/frankfurt/water-quality
+exchange-data https://cities.app/de/he/babenhausen
 ```
 
 When you run the exchange, bytEM automatically performs the Find process and then exchanges the data into the Demand Room.
