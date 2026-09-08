@@ -117,6 +117,8 @@ BOT_USERNAME=${BOT_USERNAME,,}
 [[ "$BOT_USERNAME" =~ ^[a-z0-9._=-]+$ ]] || die "Invalid bot username."
 [ "$TEST_USERNAME" != "$BOT_USERNAME" ] || die "Test and bot usernames must be different."
 
+DEFAULT_DEID_DOMAIN="$DOMAIN_NAME"
+
 for credential in TEST_PASSWORD BOT_PASSWORD; do
   validate_env_value "$credential" "${!credential}"
 done
@@ -201,6 +203,7 @@ replace_placeholder FEDERATION_EXTRA_DOMAINS "$FEDERATION_EXTRA_DOMAINS"
 replace_placeholder FEDERATION_STRICT "$FEDERATION_STRICT"
 replace_placeholder SSL_EMAIL "$SSL_EMAIL"
 replace_placeholder NEXT_PUBLIC_DEMAND_PRODUCT_DEID "$NEXT_PUBLIC_DEMAND_PRODUCT_DEID"
+replace_placeholder DEFAULT_DEID_DOMAIN "$DEFAULT_DEID_DOMAIN"
 
 if grep -q '\${[A-Z_][A-Z_]*}' "$OUTPUT_TMP"; then
   grep -n '\${[A-Z_][A-Z_]*}' "$OUTPUT_TMP" >&2
