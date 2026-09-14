@@ -29,12 +29,29 @@ Before installing bytEM, make sure the following requirements are available:
 * Inbound TCP ports `80`, `443`, and `8448`
 * Outbound HTTPS access for Docker image pulls and federation market-list retrieval
 
-Verify Docker and Docker Compose:
+
+### Install Docker if not already installed
+
+If Docker is not installed on the server, install Docker Engine and Docker Compose v2 before continuing with the bytEM installation.
+
+Run:
+
+```bash
+sudo apt update
+sudo apt install -y docker.io docker-compose-v2
+sudo systemctl enable --now docker
+sudo systemctl status docker
+```
+
+Verify that Docker and Docker Compose are available:
 
 ```bash
 docker --version
 docker compose version
 ```
+
+If Docker is running correctly, continue with the bytEM installation.
+
 
 ### Docker permissions
 
