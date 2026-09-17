@@ -61,6 +61,7 @@ if [ ! -f "certbot/conf/live/${DOMAIN_NAME}/fullchain.pem" ] || \
 fi
 
 log "Starting or upgrading the bytEM stack"
+mkdir -p logs/nginx
 docker compose --env-file .env up -d --remove-orphans
 
 log "Waiting for service health checks"

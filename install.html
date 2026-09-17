@@ -487,6 +487,20 @@
           <span class="err" id="e-prefix" hidden></span>
         </div>
 
+        <div class="field">
+          <label for="f-repo">Domain repository <span style="text-transform:none;font-weight:400">— optional</span></label>
+          <input type="text" id="f-repo" placeholder="https://codeberg.org/owner/repo" spellcheck="false" autocomplete="off">
+          <p class="hint">The Forgejo or Gitea repository that publishes this domain's DEID documents. Admins browse and edit it in <strong>Domain explorer</strong> on the Overview page. Leave empty to turn the explorer off.</p>
+          <span class="err" id="e-repo" hidden></span>
+        </div>
+
+        <div class="field">
+          <label for="f-token">Repository write token <span style="text-transform:none;font-weight:400">— optional</span></label>
+          <input type="password" id="f-token" autocomplete="off">
+          <p class="hint">An access token with write permission on that repository. Without it the explorer can browse but not save.</p>
+          <span class="err" id="e-token" hidden></span>
+        </div>
+
         <p class="hint" id="note-public" style="max-width:62ch">Both names need to resolve here, with TCP 80, 443 and 8448 reachable, by the time you run the installer — 80 for certificate issuance, 8448 for federation.</p>
 
         <p class="note" id="note-localhost" hidden>Names under <code>.localhost</code> are reserved for loopback by RFC 6761, and glibc and systemd-resolved answer them without any DNS or <code>/etc/hosts</code> entry — so this needs no configuration and works offline. If your resolver is one of the few that doesn't, add one line: <code>127.0.0.1 bytem.localhost matrix.bytem.localhost</code>.</p>
@@ -537,7 +551,7 @@
 
         <p class="note">Allowed in passwords: letters, digits and <code>. _ : / @ % + = , -</code>. Other characters are rejected because they need quoting inside an env file.</p>
 
-        <p class="note warn"><strong>Passwords apply on first start only.</strong> Synapse creates each account once; re-running the installer with a different password leaves the existing account's password unchanged. To rotate one later, use <code>docker exec bytem-synapse</code> or the Synapse admin API.</p>
+        <p class="note warn"><strong>Passwords apply on first start only.</strong> Synapse creates each account once; re-running the installer with a different password leaves the existing account's password unchanged. To change it later, sign in and use <strong>Password</strong> in the application header, then put the new value in <code>.env</code> as well.</p>
 
         <div class="actions">
           <button type="button" class="act ghost" data-go="0">Back</button>
@@ -561,7 +575,7 @@
 
         <div class="field">
           <label for="f-market">Market list URL</label>
-          <input type="text" id="f-market" value="https://bytem.app/markets/byteM-market-list" spellcheck="false" autocomplete="off">
+          <input type="text" id="f-market" value="https://bytem.app/markets/bytem-market-list.json" spellcheck="false" autocomplete="off">
           <p class="hint">Source for the set of instances this server will federate with.</p>
           <span class="err" id="e-market" hidden></span>
         </div>
@@ -714,7 +728,8 @@
     REGISTRATION_SHARED_SECRET: randHex(32),
     SYNAPSE_MACAROON_SECRET_KEY: randHex(32),
     SYNAPSE_FORM_SECRET: randHex(32),
-    JWT_SECRET: randHex(32)
+    JWT_SECRET: randHex(32),
+    TRAFFIC_REPORT_SECRET: randHex(32)
   };
   var CARRYABLE = Object.keys(minted);
 
@@ -766,6 +781,8 @@
       tpass: $("f-tpass").value,
       buser: $("f-buser").value.trim().toLowerCase(),
       bpass: $("f-bpass").value,
+      repo: $("f-repo").value.trim().replace(/\/+$/, ""),
+      token: $("f-token").value.trim(),
       email: $("f-email").value.trim() || (app ? "admin@" + app : ""),
       market: $("f-market").value.trim(),
       extra: $("f-extra").value.trim(),
@@ -790,6 +807,8 @@
       else if (!RE_DOMAIN.test(s.domain)) add(0, "domain", "Not a valid domain name: " + s.domain);
     }
     if (s.prefix && !RE_PREFIX.test(s.prefix)) add(0, "prefix", "A prefix may contain only lowercase letters, digits and hyphens.");
+    if (s.repo && !/^https?:\/\/[^\/]+\/[^\/]+\/[^\/]+$/.test(s.repo)) add(0, "repo", "Use the repository web URL, for example https://codeberg.org/owner/repo");
+    if (s.token && !RE_ENVVAL.test(s.token)) add(0, "token", "Contains a character that is unsafe in an env file.");
 
     if (!s.tuser) add(1, "tuser", "A test/admin username is required.");
     else if (!RE_USER.test(s.tuser)) add(1, "tuser", "Allowed: lowercase letters, digits and . _ = -");
@@ -835,6 +854,12 @@
       "API_HOST_INTERNAL=http://localhost:3000",
       "EXCHANGE_PORT=3000",
       "EXCHANGE_SERVER_PROTOCOL=https",
+      "PWA_PORT=3002",
+      "",
+      "# Domain Manager: repository publishing DEFAULT_DEID_DOMAIN's DEID documents",
+      "# (e.g. https://codeberg.org/Liberbyte/cities.app) and a write token for it.",
+      "DOMAIN_REPO=" + s.repo,
+      "DOMAIN_REPO_TOKEN=" + s.token,
       "",
       "# Matrix room aliases",
       'SUPPLY_INDEX_ROOM_ALIAS="#bytem-supply-index-room:' + s.matrix + '"',
@@ -902,6 +927,10 @@
       "ENABLE_LOGGING=true",
       "SSL_EMAIL=" + s.email,
       "",
+      "# bytem-nginx writes an IP-truncated access log to logs/nginx/. A report placed there",
+      "# as traffic-report.html is served at /traffic-report.html?secret=<this value>.",
+      "TRAFFIC_REPORT_SECRET=" + k.TRAFFIC_REPORT_SECRET,
+      "",
       "# The PWA owns both the public and operator UI routes. Its runtime URLs are",
       "# derived from API_HOST and MATRIX_SERVER by docker-compose.yaml.",
       "NEXT_PUBLIC_DEMAND_PRODUCT_DEID=https://cities.app/de/he/water/water-quality",
@@ -917,7 +946,8 @@
     "BOT_PASSWORD", "TEST_PASSWORD", "MATRIX_ADMIN_PASSWORD",
     "RABBITMQ_DEFAULT_PASS", "SOLR_PASSWORD", "POSTGRES_PASSWORD",
     "SYNAPSE_POSTGRES_PASSWORD", "REGISTRATION_SHARED_SECRET",
-    "SYNAPSE_MACAROON_SECRET_KEY", "SYNAPSE_FORM_SECRET", "JWT_SECRET"
+    "SYNAPSE_MACAROON_SECRET_KEY", "SYNAPSE_FORM_SECRET", "JWT_SECRET",
+    "DOMAIN_REPO_TOKEN", "TRAFFIC_REPORT_SECRET"
   ];
 
   function mask(text) {
@@ -973,7 +1003,7 @@
     setD("d-bot", s.buser && s.matrix ? "@" + s.buser + ":" + s.matrix : "");
 
     // field errors
-    ["domain", "prefix", "tuser", "tpass", "buser", "bpass", "email", "market", "extra"].forEach(function (f) {
+    ["domain", "prefix", "repo", "token", "tuser", "tpass", "buser", "bpass", "email", "market", "extra"].forEach(function (f) {
       var hit = probs.filter(function (p) { return p.field === f; })[0];
       var box = $("e-" + f);
       var input = $("f-" + f);
@@ -1202,8 +1232,12 @@
     if (env.TEST_PASSWORD || env.MATRIX_ADMIN_PASSWORD) $("f-tpass").value = env.TEST_PASSWORD || env.MATRIX_ADMIN_PASSWORD;
     if (env.BOT_USERNAME) $("f-buser").value = env.BOT_USERNAME;
     if (env.BOT_PASSWORD) $("f-bpass").value = env.BOT_PASSWORD;
+    if (env.DOMAIN_REPO) $("f-repo").value = env.DOMAIN_REPO;
+    if (env.DOMAIN_REPO_TOKEN) $("f-token").value = env.DOMAIN_REPO_TOKEN;
     if (env.SSL_EMAIL) $("f-email").value = env.SSL_EMAIL;
-    if (env.FEDERATION_MARKET_LIST_URL || env.MARKET_LIST) $("f-market").value = env.FEDERATION_MARKET_LIST_URL || env.MARKET_LIST;
+    // The earlier default .../byteM-market-list answers 404; keep the field's corrected default instead.
+    var market = env.FEDERATION_MARKET_LIST_URL || env.MARKET_LIST;
+    if (market && market !== "https://bytem.app/markets/byteM-market-list") $("f-market").value = market;
     if (env.FEDERATION_EXTRA_DOMAINS) $("f-extra").value = env.FEDERATION_EXTRA_DOMAINS;
     if (env.FEDERATION_STRICT === "0" || env.FEDERATION_STRICT === "1") $("f-strict").value = env.FEDERATION_STRICT;
   }

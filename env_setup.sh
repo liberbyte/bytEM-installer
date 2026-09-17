@@ -102,6 +102,12 @@ else
   info "Bot account (used only by the backend and bot services)"
   prompt_required BOT_USERNAME "Bot username"
   prompt_required BOT_PASSWORD "Bot password" true
+
+  echo
+  info "Domain Manager (optional, Enter to skip)"
+  read -rp "DEID domain repository URL (for example, https://codeberg.org/owner/repo): " DOMAIN_REPO
+  read -rsp "Write token for that repository: " DOMAIN_REPO_TOKEN
+  echo
 fi
 
 DOMAIN_NAME=${DOMAIN_NAME,,}
@@ -149,15 +155,22 @@ SYNAPSE_FORM_SECRET=${SYNAPSE_FORM_SECRET:-$(generate_secret)}
 JWT_SECRET=${JWT_SECRET:-$(existing_setting JWT_SECRET)}
 JWT_SECRET=${JWT_SECRET:-$(generate_secret)}
 MARKET_LIST=${MARKET_LIST:-$(existing_setting MARKET_LIST)}
-MARKET_LIST=${MARKET_LIST:-https://bytem.app/markets/byteM-market-list}
+MARKET_LIST=${MARKET_LIST:-https://bytem.app/markets/bytem-market-list.json}
+# The earlier default .../byteM-market-list answers 404, which silently leaves federation off.
+[ "$MARKET_LIST" != "https://bytem.app/markets/byteM-market-list" ] || MARKET_LIST=https://bytem.app/markets/bytem-market-list.json
 FEDERATION_MARKET_LIST_URL=${FEDERATION_MARKET_LIST_URL:-$(existing_setting FEDERATION_MARKET_LIST_URL)}
 FEDERATION_MARKET_LIST_URL=${FEDERATION_MARKET_LIST_URL:-$MARKET_LIST}
+[ "$FEDERATION_MARKET_LIST_URL" != "https://bytem.app/markets/byteM-market-list" ] || FEDERATION_MARKET_LIST_URL=$MARKET_LIST
 FEDERATION_EXTRA_DOMAINS=${FEDERATION_EXTRA_DOMAINS:-$(existing_setting FEDERATION_EXTRA_DOMAINS)}
 FEDERATION_EXTRA_DOMAINS=${FEDERATION_EXTRA_DOMAINS:-matrix.org}
 FEDERATION_STRICT=${FEDERATION_STRICT:-$(existing_setting FEDERATION_STRICT)}
 FEDERATION_STRICT=${FEDERATION_STRICT:-0}
 SSL_EMAIL=${SSL_EMAIL:-$(existing_setting SSL_EMAIL)}
 SSL_EMAIL=${SSL_EMAIL:-admin@${BYTEM_DOMAIN}}
+DOMAIN_REPO=${DOMAIN_REPO:-$(existing_setting DOMAIN_REPO)}
+DOMAIN_REPO_TOKEN=${DOMAIN_REPO_TOKEN:-$(existing_setting DOMAIN_REPO_TOKEN)}
+TRAFFIC_REPORT_SECRET=${TRAFFIC_REPORT_SECRET:-$(existing_setting TRAFFIC_REPORT_SECRET)}
+TRAFFIC_REPORT_SECRET=${TRAFFIC_REPORT_SECRET:-$(generate_secret)}
 NEXT_PUBLIC_DEMAND_PRODUCT_DEID=${NEXT_PUBLIC_DEMAND_PRODUCT_DEID:-$(existing_setting NEXT_PUBLIC_DEMAND_PRODUCT_DEID)}
 NEXT_PUBLIC_DEMAND_PRODUCT_DEID=${NEXT_PUBLIC_DEMAND_PRODUCT_DEID:-https://cities.app/de/he/water/water-quality}
 
@@ -165,8 +178,11 @@ for variable_name in \
   RABBITMQ_DEFAULT_USER RABBITMQ_DEFAULT_PASS SYNAPSE_POSTGRES_PASSWORD \
   SOLR_USER SOLR_PASSWORD REGISTRATION_SHARED_SECRET SYNAPSE_MACAROON_SECRET_KEY \
   SYNAPSE_FORM_SECRET JWT_SECRET MARKET_LIST FEDERATION_MARKET_LIST_URL \
-  FEDERATION_EXTRA_DOMAINS FEDERATION_STRICT SSL_EMAIL NEXT_PUBLIC_DEMAND_PRODUCT_DEID; do
+  FEDERATION_EXTRA_DOMAINS FEDERATION_STRICT SSL_EMAIL NEXT_PUBLIC_DEMAND_PRODUCT_DEID TRAFFIC_REPORT_SECRET; do
   validate_env_value "$variable_name" "${!variable_name}"
+done
+for variable_name in DOMAIN_REPO DOMAIN_REPO_TOKEN; do
+  [ -z "${!variable_name:-}" ] || validate_env_value "$variable_name" "${!variable_name}"
 done
 
 if [ -f .env ]; then
@@ -204,6 +220,9 @@ replace_placeholder FEDERATION_STRICT "$FEDERATION_STRICT"
 replace_placeholder SSL_EMAIL "$SSL_EMAIL"
 replace_placeholder NEXT_PUBLIC_DEMAND_PRODUCT_DEID "$NEXT_PUBLIC_DEMAND_PRODUCT_DEID"
 replace_placeholder DEFAULT_DEID_DOMAIN "$DEFAULT_DEID_DOMAIN"
+replace_placeholder DOMAIN_REPO "${DOMAIN_REPO:-}"
+replace_placeholder DOMAIN_REPO_TOKEN "${DOMAIN_REPO_TOKEN:-}"
+replace_placeholder TRAFFIC_REPORT_SECRET "$TRAFFIC_REPORT_SECRET"
 
 if grep -q '\${[A-Z_][A-Z_]*}' "$OUTPUT_TMP"; then
   grep -n '\${[A-Z_][A-Z_]*}' "$OUTPUT_TMP" >&2
@@ -213,7 +232,7 @@ fi
 chmod 600 "$OUTPUT_TMP"
 mv "$OUTPUT_TMP" .env
 trap - EXIT
-mkdir -p certbot/conf certbot/www
+mkdir -p certbot/conf certbot/www logs/nginx
 
 echo -e "${GREEN}Created .env with separate test and bot accounts.${NC}"
 echo "  Application: https://${BYTEM_DOMAIN}"

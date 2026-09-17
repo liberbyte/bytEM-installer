@@ -226,6 +226,8 @@ The usernames must be different, and the test/admin and bot accounts should use 
 
 Synapse creates both accounts during the initial installation.
 
+Signed-in users change their own password from **Password** in the application header. `.env` is not updated: after changing the test/admin password there, update `TEST_PASSWORD` and `MATRIX_ADMIN_PASSWORD` in `.env` too, or `scripts/test_workflow.sh` can no longer sign in.
+
 Infrastructure passwords and stable Synapse secrets are generated automatically. Store `.env` in a password manager or secure backup and never commit it.
 
 ---
@@ -385,6 +387,28 @@ To fetch it again and inspect the resulting active list:
 ```bash
 ./whitelist-sync.sh
 ```
+
+## Domain explorer
+
+Admins open **Domain explorer** on the Overview page to browse, edit and delete the DEID documents of `DEFAULT_DEID_DOMAIN`. It works on the repository in `.env`:
+
+```text
+DOMAIN_REPO=https://codeberg.org/owner/repo
+DOMAIN_REPO_TOKEN=<Forgejo/Gitea access token with write access to that repository>
+```
+
+Without `DOMAIN_REPO` the explorer is unavailable; without `DOMAIN_REPO_TOKEN` it can browse but not save. Restart `bytem-be` after changing either value.
+
+## Access log and traffic report
+
+`bytem-nginx` writes the public site's access log, with client IPs truncated, to `logs/nginx/access.log`. To turn it into a report (needs `goaccess` on the host):
+
+```bash
+goaccess logs/nginx/access.log --log-format='%h - %^ [%d:%t %^] "%r" %s %b "%R" "%u" %T %^' \
+  --date-format=%d/%b/%Y --time-format=%T -o logs/nginx/traffic-report.html
+```
+
+Share it as `https://${DOMAIN_NAME}/traffic-report.html?secret=${TRAFFIC_REPORT_SECRET}`. Change `TRAFFIC_REPORT_SECRET` in `.env` and restart `bytem-nginx` to revoke every shared link.
 
 ---
 
