@@ -7,6 +7,12 @@
 > [!NOTE]
 > bytEM is under active development. Interfaces, commands, and screens may change between releases.
 
+## Video Guide
+
+The following video demonstrates the complete bytEM workflow, from creating and configuring a Supply Room to discovering, requesting and exchanging data.
+
+https://github.com/user-attachments/assets/f21e1769-da55-43a0-9aae-5cbb721fed05
+
 ## Workflow
 
 ```text
