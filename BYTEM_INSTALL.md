@@ -1,5 +1,11 @@
 # bytEM Installation and Upgrade Guide
 
+## Installation Video
+
+The following video provides a step-by-step demonstration of the bytEM installation process.
+
+https://github.com/user-attachments/assets/ee724e7d-fe32-400e-9641-5219ec5bab41
+
 ## Architecture
 
 The public installer pulls the images produced by the private/source repository's GitHub Actions workflow:
