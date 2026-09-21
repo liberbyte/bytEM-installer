@@ -1,4 +1,4 @@
-# bytEM public deployment
+# bytEM installer 
 
 This repository installs bytEM from the Docker images published by the main
 repository's GitHub Actions workflow. It does not build application source.
