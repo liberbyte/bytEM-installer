@@ -7,11 +7,54 @@
 > [!NOTE]
 > bytEM is under active development. Interfaces, commands, and screens may change between releases.
 
-## Video Guide
+## Video Guide 1- bytEM- Supply and Exchange Workflow
 
 The following video demonstrates the complete bytEM workflow, from creating and configuring a Supply Room to discovering, requesting and exchanging data.
 
 https://github.com/user-attachments/assets/f21e1769-da55-43a0-9aae-5cbb721fed05
+
+### Parts 2 and 3 — Repository Structuring
+
+> [!IMPORTANT]
+> The following videos demonstrate repository structuring only. Creating DEID,
+> Class and Schema files in a repository does not by itself publish them on the
+> web.
+>
+> To publish these resources under a domain that you control, you need a
+> publicly accessible server or VM running a web server such as Nginx or Apache.
+>
+> If you want to publish approved `cities.app` DEID, Class or Schema resources,
+> this can instead be done through the designated public Codeberg repository.
+> The files must be merged and deployed before their public URLs become
+> available.
+
+Repository structure and web publication are therefore separate steps:
+
+1. Create and organise the files in the repository.
+2. Publish the files through a server/VM or the approved `cities.app` Codeberg workflow.
+3. Confirm that the final public URLs are accessible.
+4. Use the published DEID in bytEM.
+
+For the underlying DEID, Class and Schema concepts, see the
+[OUDEA v0.1 specification](https://oudea.org/).
+
+### Video Guide 2- bytEM- Creating Class and Schema Files
+This video demonstrates how to create Class and Schema definitions, organise
+them in the repository and test their intended URLs.
+
+The URLs become available only after the files have been deployed through the
+publishing server or the approved `cities.app` Codeberg workflow.
+
+https://github.com/user-attachments/assets/c5dde958-ad2e-43b2-be26-d9e8f0a2674d
+
+### Video Guide 3- bytEM- Creating and Structuring a DEID
+This video demonstrates how to create a DEID definition and organise it in the
+required repository structure.
+
+It covers repository structuring only. The DEID must still be published through
+the appropriate server or publishing infrastructure.
+
+https://github.com/user-attachments/assets/5559b30f-9f76-409e-9d75-327c72f2c31a
 
 ## Workflow
 
