@@ -7,54 +7,6 @@
 > [!NOTE]
 > bytEM is under active development. Interfaces, commands, and screens may change between releases.
 
-## Video Guide 1- bytEM- Supply and Exchange Workflow
-
-The following video demonstrates the complete bytEM workflow, from creating and configuring a Supply Room to discovering, requesting and exchanging data.
-
-https://github.com/user-attachments/assets/f21e1769-da55-43a0-9aae-5cbb721fed05
-
-### Parts 2 and 3 — Repository Structuring
-
-> [!IMPORTANT]
-> The following videos demonstrate repository structuring only. Creating DEID,
-> Class and Schema files in a repository does not by itself publish them on the
-> web.
->
-> To publish these resources under a domain that you control, you need a
-> publicly accessible server or VM running a web server such as Nginx or Apache.
->
-> If you want to publish approved `cities.app` DEID, Class or Schema resources,
-> this can instead be done through the designated public Codeberg repository.
-> The files must be merged and deployed before their public URLs become
-> available.
-
-Repository structure and web publication are therefore separate steps:
-
-1. Create and organise the files in the repository.
-2. Publish the files through a server/VM or the approved `cities.app` Codeberg workflow.
-3. Confirm that the final public URLs are accessible.
-4. Use the published DEID in bytEM.
-
-For the underlying DEID, Class and Schema concepts, see the
-[OUDEA v0.1 specification](https://oudea.org/).
-
-### Video Guide 2- bytEM- Creating Class and Schema Files
-This video demonstrates how to create Class and Schema definitions, organise
-them in the repository and test their intended URLs.
-
-The URLs become available only after the files have been deployed through the
-publishing server or the approved `cities.app` Codeberg workflow.
-
-https://github.com/user-attachments/assets/c5dde958-ad2e-43b2-be26-d9e8f0a2674d
-
-### Video Guide 3- bytEM- Creating and Structuring a DEID
-This video demonstrates how to create a DEID definition and organise it in the
-required repository structure.
-
-It covers repository structuring only. The DEID must still be published through
-the appropriate server or publishing infrastructure.
-
-https://github.com/user-attachments/assets/5559b30f-9f76-409e-9d75-327c72f2c31a
 
 ## Workflow
 
@@ -133,6 +85,7 @@ Publish + Index ───────────────► Discover in Ind
 17. [Troubleshooting](#17-troubleshooting)
 18. [Getting Help](#18-getting-help)
 
+- [Video Guides](#video-guides)
 
 ## Getting Started
 
@@ -414,6 +367,9 @@ After creating a Supply Room, set its **DEID** and **Class**.
 
 Open the Supply Room and select **Open Data Room**.
 
+> [!IMPORTANT]
+> Creating DEID, Class, and Schema files in a repository does not publish them on the web. To publish them under a domain you control, deploy them on a publicly accessible server or VM. Approved `cities.app` resources can instead be merged and deployed through the designated public Codeberg repository. Confirm that the final URLs work before using the published DEID in bytEM. For definitions, see the [OUDEA terminology](https://oudea.org/terminology.html).
+
 #### Set the DEID
 
 You can view and set the DEID in different ways.
@@ -467,6 +423,9 @@ Choose a meaningful URL that clearly describes your data.
 > [!IMPORTANT]
 > Once data has been uploaded to a Supply Room, its DEID cannot be changed. Make sure you set the correct DEID before uploading data.
 
+> [!TIP]
+> **Need help preparing a DEID definition?** [Video Guide 3](#video-guide-3-creating-and-structuring-a-deid) shows how to create and organise its repository files. The video covers file structure; publication is a separate step.
+
 #### Set the Class
 
 You can set the Class in the same way.
@@ -505,7 +464,8 @@ This also displays the Class template.
 ```text
 ahrensfelde
 ```
-
+> [!TIP]
+> **Need help creating Class or Schema definitions?** [Video Guide 2](#video-guide-2-creating-class-and-schema-files) shows how to organise the files and check their intended URLs. A Schema is optional and refines a Class.
 
 ### 8. Upload Data and Make It Exchangeable
 
@@ -751,6 +711,8 @@ After successfully logging in, you will be redirected to the Demand Room.
 
 If you do not have a Matrix account, click **Create one** on the login page.
 
+> [!TIP]
+> **Want to see the complete workflow?** [Video Guide 1](#video-guide-1-supply-and-exchange-workflow) shows the process from configuring a Supply Room to discovering, requesting, and exchanging data.
 
 ### 12. Find and Exchange Reference Data
 
@@ -1105,6 +1067,28 @@ If you need additional help, contact your bytEM administrator or join the bytEM 
 
 * **Support Room:** `#bytem-install-admin:matrix.liberbyte.com`
 * **Direct link:** [#bytem-install-admin:matrix.liberbyte.com](https://matrix.to/#/#bytem-install-admin:matrix.liberbyte.com)
+
+## Video Guides
+
+These optional walkthroughs provide visual examples of the written steps above. You can return to them whenever a particular step needs more explanation.
+
+### Video Guide 1: Supply and Exchange Workflow
+
+See how to configure a Supply Room, supply data, discover it, and request it through Single-Click Exchange.
+
+https://github.com/user-attachments/assets/f21e1769-da55-43a0-9aae-5cbb721fed05
+
+### Video Guide 2: Creating Class and Schema Files
+
+See how to create and organise Class and optional Schema definition files and check their intended URLs.
+
+https://github.com/user-attachments/assets/c5dde958-ad2e-43b2-be26-d9e8f0a2674d
+
+### Video Guide 3: Creating and Structuring a DEID
+
+See how to create and organise a DEID definition in a repository.
+
+https://github.com/user-attachments/assets/5559b30f-9f76-409e-9d75-327c72f2c31a
 
 *bytEM User Guide — © 2026*
 
