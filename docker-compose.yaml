@@ -1,26 +1,36 @@
 services:
+
   bytem-nginx:
     image: liberbyteadmin/bytem:nginx
     container_name: bytem-nginx
     restart: always
     mem_limit: 512m
-    env_file:
-      - .env
-    environment:
-      NODE_ENV: production
     ports:
       - "80:80"
       - "443:443"
       - "8448:8448"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
     volumes:
       - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
+      # Public-site access log (IP-truncated), read by scripts/retrieve-access-logs-traffic-report.sh
       - ./logs/nginx:/var/log/bytem
     networks:
       default:
+        # Server-side Matrix calls must keep the public hostname: it is part of
+        # MXIDs, aliases, TLS validation, and federation. Resolve both public
+        # names to this edge container inside Docker instead of relying on host
+        # hairpin NAT.
         aliases:
           - ${DOMAIN_NAME}
           - ${MATRIX_SERVER_NAME}
+    # Ordering only. The edge resolves every upstream at request time through
+    # Docker's DNS (see `resolver` + `set $upstream_*` in nginx/default.conf),
+    # so it must not be gated on an application container: ACME renewal and
+    # Matrix federation have to stay reachable even when the PWA is unhealthy.
     depends_on:
       bytem-pwa:
         condition: service_started
@@ -44,29 +54,32 @@ services:
         condition: service_healthy
       bytem-synapse:
         condition: service_healthy
+    ports:
+      - "127.0.0.1:${EXCHANGE_PORT}:${EXCHANGE_PORT}"
     env_file:
       - .env
     environment:
-      NODE_ENV: production
-      RABBITMQ_URL: amqp://bytem-rabbitmq:5672/bytem
-      SOLR_URL: http://${SOLR_USER}:${SOLR_PASSWORD}@bytem-solr:8983
-      API_HOST_INTERNAL: http://bytem-be:3000
-    ports:
-      - "3000:3000"
-    dns:
-      - 8.8.8.8
-      - 8.8.4.4
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/api/auth/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 8
-      start_period: 30s
+      - NODE_ENV=production
+      # Docker overrides — containers can't reach host-published ports via the
+      # public domain (Docker DNAT only fires for external-interface traffic).
+      # .env keeps the real domain URLs for non-Docker / distributed deployment.
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@bytem-rabbitmq:5672/${RABBITMQ_DEFAULT_VHOST}
+      - SOLR_URL=http://bytem-solr:8983
+      - API_HOST_INTERNAL=http://bytem-be:${EXCHANGE_PORT}
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "5"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:${EXCHANGE_PORT}/api/auth/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
 
   bytem-bot:
     image: liberbyteadmin/bytem:bot
@@ -81,46 +94,54 @@ services:
         condition: service_healthy
       bytem-synapse:
         condition: service_healthy
+    ports:
+      - "127.0.0.1:${BOT_PORT}:${BOT_PORT}"
     env_file:
       - .env
     environment:
-      NODE_ENV: production
-      RABBITMQ_URL: amqp://bytem-rabbitmq:5672/bytem
-      SOLR_URL: http://${SOLR_USER}:${SOLR_PASSWORD}@bytem-solr:8983
-      API_HOST_INTERNAL: http://bytem-be:3000
-    ports:
-      - "4000:4000"
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:4000/health | grep -q '\"status\":\"healthy\"'"]
-      interval: 15s
-      timeout: 5s
-      retries: 8
-      start_period: 45s
+      - NODE_ENV=production
+      # Docker overrides — see bytem-be comment above.
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@bytem-rabbitmq:5672/${RABBITMQ_DEFAULT_VHOST}
+      - SOLR_URL=http://bytem-solr:8983
+      - API_HOST_INTERNAL=http://bytem-be:${EXCHANGE_PORT}
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "5"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:${BOT_PORT}/health | grep -q '\"status\":\"healthy\"'"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
 
   bytem-pwa:
     image: liberbyteadmin/bytem:pwa
     container_name: bytem-pwa
     restart: always
+    ports:
+      # Loopback only: nginx reaches the PWA over the Docker network as
+      # bytem-pwa:${PWA_PORT}. Publishing it on 0.0.0.0 exposed the Next server
+      # directly, bypassing the edge's TLS, CSP, and rate limiting.
+      - "127.0.0.1:${PWA_PORT}:${PWA_PORT}"
     env_file:
       - .env
     environment:
-      NODE_ENV: production
-      NEXT_PUBLIC_API_BASE_URL: ${API_HOST}
-      API_HOST_INTERNAL: http://bytem-be:3000
-      NEXT_PUBLIC_DEMAND_PRODUCT_DEID: ${NEXT_PUBLIC_DEMAND_PRODUCT_DEID:-https://cities.app/de/he/water/water-quality}
-      PWA_URL: ${API_HOST}/
-      PWA_BYTEM_DEMROOM_FRAME_BACKLINK: ${API_HOST}/
-      PWA_DEMAND_BYTEM_GUEST: ${API_HOST}/
-      PWA_MATRIX_BYTEM_URL: ${MATRIX_SERVER}/
-    ports:
-      - "3002:3002"
+      - NODE_ENV=production
+      # Derived from API_HOST (single source of truth in .env)
+      - NEXT_PUBLIC_API_BASE_URL=${API_HOST}
+      # Internal api-gateway URL for server-side calls from this container — the
+      # public API_HOST is not reachable from inside the container (hairpin NAT).
+      # Hardcoded to the docker service name (same as be/bot); .env does not carry it.
+      - API_HOST_INTERNAL=http://bytem-be:${EXCHANGE_PORT}
+      # Example DEID that this market's /llms.txt names (pwa/app/llms.txt/route.ts).
+      # It also fed the /demand featured-product hero, removed 2026-09-05; see the
+      # note in pwa/app/demand/page.tsx. After changing it, recreate the container:
+      # sudo docker compose up -d --build --force-recreate bytem-pwa
+      - NEXT_PUBLIC_DEMAND_PRODUCT_DEID=${NEXT_PUBLIC_DEMAND_PRODUCT_DEID}
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3002/offline"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:${PWA_PORT}/offline"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -133,28 +154,28 @@ services:
     env_file:
       - .env
     environment:
-      SOLR_LOG_LEVEL: WARN
-      SOLR_OPTS: -Dlog4j2.formatMsgNoLookups=true
-      SOLR_USER: ${SOLR_USER}
-      SOLR_PASSWORD: ${SOLR_PASSWORD}
-    volumes:
-      - bytem-solr-data:/var/solr
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS --user \"$${SOLR_USER}:$${SOLR_PASSWORD}\" http://127.0.0.1:8983/solr/admin/info/system >/dev/null"]
-      interval: 15s
-      timeout: 5s
-      retries: 8
-      start_period: 30s
+      - SOLR_LOG_LEVEL=WARN
+      - SOLR_OPTS=-Dlog4j2.formatMsgNoLookups=true
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+    volumes:
+      - bytem-solr-data:/var/solr
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8983/solr/admin/info/system >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
 
   bytem-synapse:
     image: liberbyteadmin/bytem:synapse
     container_name: bytem-synapse
     restart: always
+    # Synapse normally stays far below this. The ceiling protects the VM if a
+    # future pathological request attempts another multi-gigabyte allocation.
     mem_limit: 8g
     depends_on:
       bytem-synapse-db:
@@ -162,10 +183,15 @@ services:
     env_file:
       - .env
     environment:
-      POSTGRES_HOST: bytem-synapse-db
+      - POSTGRES_HOST=bytem-synapse-db
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
-      - "8008:8008"
-      - "8009:8009"
+      - "127.0.0.1:8008:8008"
+      - "127.0.0.1:8009:8009"
     volumes:
       - bytem-synapse-data:/data
     dns:
@@ -177,11 +203,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
 
   bytem-synapse-db:
     image: docker.io/postgres:14-alpine
@@ -190,9 +211,17 @@ services:
     env_file:
       - .env
     environment:
-      POSTGRES_INITDB_ARGS: --locale=C --encoding=UTF8
-    ports:
-      - "5432:5432"
+      - POSTGRES_INITDB_ARGS=--locale=C --encoding=UTF8
+    # The image defaults are for a 1 GB machine (shared_buffers 128MB). Size per host in .env.
+    command: postgres -c shared_buffers=${PG_SHARED_BUFFERS:-1GB} -c effective_cache_size=${PG_EFFECTIVE_CACHE_SIZE:-3GB} -c work_mem=16MB -c random_page_cost=1.1
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+    # No host port mapping: Synapse reaches Postgres over the Docker network as
+    # bytem-synapse-db:5432. Nothing on the host needs the database; use
+    # `docker compose exec bytem-synapse-db psql ...` for maintenance.
     volumes:
       - bytem-synapse-db-data:/var/lib/postgresql/data
     healthcheck:
@@ -200,11 +229,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "5m"
-        max-file: "3"
 
   bytem-rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -212,29 +236,28 @@ services:
     restart: always
     env_file:
       - .env
-    ports:
-      - "5672:5672"
-      - "15672:15672"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # No host port mapping: the gateway and bot reach RabbitMQ over the Docker
+    # network as bytem-rabbitmq:5672. Nothing on the host needs AMQP or the
+    # management UI; use `docker compose exec bytem-rabbitmq rabbitmqctl ...` or
+    # `docker compose exec bytem-rabbitmq rabbitmq-diagnostics ...` for admin.
     volumes:
       - bytem-rabbitmq-data:/var/lib/rabbitmq/
-      - bytem-rabbitmq-log:/var/log/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
       timeout: 5s
       retries: 12
       start_period: 20s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+
 
 volumes:
   bytem-rabbitmq-data:
     name: bytem-rabbitmq-data
-  bytem-rabbitmq-log:
-    name: bytem-rabbitmq-log
   bytem-synapse-db-data:
     name: bytem-synapse-db-data
   bytem-synapse-data:

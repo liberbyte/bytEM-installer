@@ -35,8 +35,8 @@ fi
 API_HOST="https://${BYTEM_DOMAIN}"
 MATRIX_HOST="https://${MATRIX_DOMAIN}"
 MATRIX_SERVER="${MATRIX_URL:-http://bytem-synapse:8008}"
-TEST_USER="${1:-${TEST_USERNAME:-}}"
-TEST_PASS="${2:-${TEST_PASSWORD:-}}"
+TEST_USER="${1:-${MATRIX_ADMIN_USERNAME:-}}"
+TEST_PASS="${2:-${MATRIX_ADMIN_PASSWORD:-}}"
 BOT_USER_ID="${BOT_USER_ID:-}"
 
 if [ -z "$TEST_USER" ] || [ -z "$TEST_PASS" ] || [ -z "$BOT_USER_ID" ]; then
