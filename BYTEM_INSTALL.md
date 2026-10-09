@@ -90,10 +90,10 @@ docker ps
 > [!NOTE]
 > Membership in the `docker` group provides privileged access to the Docker daemon.
 
-For a base domain `example.com` and prefix `bm4`, setup creates:
+For the deployment domain `de.example.org`, setup creates:
 
-* `bytem.bm4.example.com`
-* `matrix.bytem.bm4.example.com`
+* `bytem.de.example.org` (application)
+* `matrix.de.example.org` (Matrix)
 
 Both names must resolve to the Docker host before certificate issuance.
 
@@ -104,8 +104,8 @@ Both names must resolve to the Docker host before certificate issuance.
 ## 1. Clone the repository
 
 ```bash
-git clone https://github.com/liberbyte/bytEM-public.git
-cd bytEM-public
+git clone https://github.com/liberbyte/bytEM-installer.git
+cd bytEM-installer
 chmod +x env_setup.sh certbot.sh install.sh whitelist-sync.sh scripts/*.sh
 ```
 
@@ -140,16 +140,7 @@ Alternatively, if direct file access is supported in your environment, on Linux 
 xdg-open install.html
 ```
 
-The GUI wizard guides you through the installation configuration and creates the required `.env` configuration.
-
-The wizard includes configuration for:
-
-1. Domains
-2. Test/admin account credentials
-3. Bot account credentials
-4. Federation and TLS settings
-
-After completing the wizard, continue with the installation.
+The wizard asks for the deployment domain, the administrator and the optional external credentials, and prints the `env_setup.sh` command to run on the server. Run that command; it writes `.env`. Then continue with the installation.
 
 ## 3. Run the installer
 
@@ -181,7 +172,7 @@ The installer:
 For headless servers or environments without a browser, use:
 
 ```bash
-./env_setup.sh
+./env_setup.sh --domain de.example.org --admin-user admin
 ```
 
 Then run:
@@ -202,56 +193,21 @@ The `env_setup.sh` script remains the supported command-line and headless instal
 
 # Account Credentials
 
-The setup requires two separate accounts.
+## Administrator
 
-## Test/admin account
+The administrator is the account a person uses to sign in. `--admin-user` sets its name. Its password is `MATRIX_ADMIN_PASSWORD` in `.env`: generated unless you pass one in the environment of `env_setup.sh`.
 
-The test/admin account is used by a person to sign in and exercise the bytEM instance.
+## Bot
 
-Example:
+The bot account `bot` is used by `bytem-be` and `bytem-bot` only. Its password `BOT_PASSWORD` is generated; nobody signs in with it.
 
-```text
-TEST_USERNAME=test
-TEST_PASSWORD=your-password
-```
+Synapse creates both accounts on first start. A password changed later in `.env` does not change the account: sign in and use **Password** in the application header, then put the new value in `.env` too, or `scripts/test_workflow.sh` can no longer sign in.
 
-## Bot account
-
-The bot account is used internally by `bytem-be` and `bytem-bot`.
-
-Example:
-
-```text
-BOT_USERNAME=bot
-BOT_PASSWORD=your-bot-password
-```
-
-Nobody should normally sign in manually using the bot account.
-
-The usernames must be different, and the test/admin and bot accounts should use different passwords.
-
-Synapse creates both accounts during the initial installation.
-
-Infrastructure passwords and stable Synapse secrets are generated automatically. Store `.env` in a password manager or secure backup and never commit it.
-
----
+Every other secret (PostgreSQL, RabbitMQ, Synapse macaroon, JWT, SIGIL signing key, traffic-report secret) is generated into `.env`. Re-running `env_setup.sh` keeps them. Store `.env` in a password manager or secure backup and never commit it.
 
 # Password Requirements
 
-Passwords are validated by the installation scripts and GUI wizard.
-
-Passwords may contain:
-
-* Letters
-* Numbers
-* Only the special characters explicitly supported by the installation wizard
-
-> [!IMPORTANT]
-> Do not use unsupported special characters in installation passwords. For example, `#` is not supported and may cause the password to be rejected.
-
-Use only the characters permitted by the GUI wizard or `env_setup.sh`.
-
-If a password is rejected during setup, create a new password using only letters, numbers, and the supported special characters.
+`env_setup.sh` accepts passwords made of letters, digits and `. _ ~ @ % + = , : # ! -`. Other characters (spaces, quotes, `$`, backslashes) are rejected, because `.env` is read by the shell and by Docker Compose.
 
 ---
 
@@ -324,15 +280,13 @@ If the new `bytem-synapse-data` volume is empty, it copies the old `/data` conte
 
 The old `generated_config_files` directory is not deleted automatically. Remove it only after verifying the upgraded deployment and retaining a backup.
 
-If you intentionally need a replacement `.env`, use:
+An `.env` written by an earlier installer version lacks variables the current images read (for example `SIGIL_PRIVATE_KEY`, `STRIPE_SECRET_KEY`, `BOT_USERS`). Regenerate it from the current template; existing secrets are read back from the old file:
 
 ```bash
-./env_setup.sh --force
+./env_setup.sh --domain <your deployment domain> --admin-user <existing admin> --force
 ```
 
-This is also the migration path for an old `.env` that used the bot as its test admin. Enter the existing domains plus new, separate account credentials.
-
-The script preserves existing database/search passwords and stable Synapse secrets unless you explicitly override those values.
+The old file is kept as `.env.backup.<time>`. Compare the two before running `./install.sh`.
 
 > [!WARNING]
 > Changing Synapse secrets or losing its signing key can invalidate sessions or break federation identity. Do not regenerate these values during a routine image upgrade.
@@ -392,6 +346,28 @@ To fetch it again and inspect the resulting active list:
 ./whitelist-sync.sh
 ```
 
+## Domain explorer
+
+Admins open **Domain explorer** on the Overview page to browse, edit and delete the DEID documents of `DEFAULT_DEID_DOMAIN`. It works on the repository in `.env` (`DOMAIN_REPO` is preset by the template; `DOMAIN_REPO_TOKEN` comes from the environment of `env_setup.sh`):
+
+```text
+DOMAIN_REPO=https://codeberg.org/owner/repo
+DOMAIN_REPO_TOKEN=<Forgejo/Gitea access token with write access to that repository>
+```
+
+Without `DOMAIN_REPO` the explorer is unavailable; without `DOMAIN_REPO_TOKEN` it can browse but not save. Restart `bytem-be` after changing either value.
+
+## Access log and traffic report
+
+`bytem-nginx` writes the public site's access log, with client IPs truncated, to `logs/nginx/access.log`. To turn it into a report (needs `goaccess` on the host):
+
+```bash
+goaccess logs/nginx/access.log --log-format='%h - %^ [%d:%t %^] "%r" %s %b "%R" "%u" %T %^' \
+  --date-format=%d/%b/%Y --time-format=%T -o logs/nginx/traffic-report.html
+```
+
+Share it as `https://${DOMAIN_NAME}/traffic-report.html?secret=${TRAFFIC_REPORT_SECRET}`. Change `TRAFFIC_REPORT_SECRET` in `.env` and restart `bytem-nginx` to revoke every shared link.
+
 ---
 
 # Common Problems
@@ -399,11 +375,11 @@ To fetch it again and inspect the resulting active list:
 | Symptom                           | Solution                                                                                                                             |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Docker socket permission denied   | Add your user to the Docker group using `sudo usermod -aG docker $USER`, log in again, or run the installer with `sudo ./install.sh` |
-| Password is rejected during setup | Use letters, numbers, and only the special characters supported by the installer. Do not use unsupported characters such as `#`      |
+| Password is rejected during setup | Use letters, digits and `. _ ~ @ % + = , : # ! -` only                                                                               |
 | nginx repeatedly restarts         | Verify both certificate paths exist under `certbot/conf/live/`; run `./certbot.sh`                                                   |
 | Let's Encrypt validation fails    | Verify both DNS names point to this server, port `80` is open, and no unrelated process occupies the port                            |
 | bot/backend exits after startup   | Verify `BOT_USERNAME` and `BOT_PASSWORD` match the separate bot account                                                              |
-| test login fails                  | Use `TEST_USERNAME` and `TEST_PASSWORD`, not the bot credentials                                                                     |
+| admin login fails                 | Use `MATRIX_ADMIN_USERNAME` and `MATRIX_ADMIN_PASSWORD` from `.env`, not the bot credentials                                         |
 | Synapse cannot start              | Run `docker compose logs bytem-synapse bytem-synapse-db` and verify stable secrets in `.env`                                         |
 | cross-instance exchange fails     | Run `./whitelist-sync.sh` and check market-list reachability                                                                         |
 | old `/pwa/...` bookmark           | nginx redirects it to the equivalent root PWA route                                                                                  |
@@ -420,6 +396,8 @@ Start local web server
 Open install.html
         ↓
 Complete GUI wizard
+        ↓
+Run the printed ./env_setup.sh command
         ↓
 Run ./install.sh
         ↓

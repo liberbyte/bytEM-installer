@@ -23,12 +23,15 @@ set -a
 source .env
 set +a
 
-required=(DOMAIN_NAME MATRIX_SERVER_NAME TEST_USERNAME TEST_PASSWORD MATRIX_ADMIN_USERNAME MATRIX_ADMIN_PASSWORD BOT_USERNAME BOT_PASSWORD)
+required=(DOMAIN_NAME MATRIX_SERVER_NAME MATRIX_ADMIN_USERNAME MATRIX_ADMIN_PASSWORD BOT_USERNAME BOT_PASSWORD POSTGRES_PASSWORD JWT_SECRET)
 for variable_name in "${required[@]}"; do
   [ -n "${!variable_name:-}" ] || die "$variable_name is missing from .env. Re-run ./env_setup.sh."
 done
 [ "$MATRIX_ADMIN_USERNAME" != "$BOT_USERNAME" ] || \
-  die "The test/admin and bot usernames are mixed together. Re-run ./env_setup.sh --force and enter separate accounts."
+  die "The administrator and bot usernames are the same. Re-run ./env_setup.sh --force with a different --admin-user."
+
+[ -n "${SIGIL_PRIVATE_KEY:-}" ] || \
+  warn "SIGIL_PRIVATE_KEY is missing from .env, so exchanged data is not signed. Re-run ./env_setup.sh --force to add it; existing secrets are kept."
 
 log "Validating deployment configuration"
 docker compose --env-file .env config --quiet
@@ -61,6 +64,7 @@ if [ ! -f "certbot/conf/live/${DOMAIN_NAME}/fullchain.pem" ] || \
 fi
 
 log "Starting or upgrading the bytEM stack"
+mkdir -p logs/nginx
 docker compose --env-file .env up -d --remove-orphans
 
 log "Waiting for service health checks"
@@ -90,7 +94,7 @@ fi
 
 echo "  Application: https://${DOMAIN_NAME}"
 echo "  Matrix:      https://${MATRIX_SERVER_NAME}"
-echo "  Test user:   @${TEST_USERNAME}:${MATRIX_SERVER_NAME}"
+echo "  Admin user:  @${MATRIX_ADMIN_USERNAME}:${MATRIX_SERVER_NAME} (password: MATRIX_ADMIN_PASSWORD in .env)"
 echo "  Bot user:    @${BOT_USERNAME}:${MATRIX_SERVER_NAME}"
 echo
 warn "The bot access token is acquired inside the services; .env is not rewritten."
