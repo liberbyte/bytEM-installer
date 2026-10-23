@@ -100,6 +100,7 @@
     text-wrap: balance;
   }
   .tagline { color: var(--ink-soft); margin: 0; max-width: 60ch; }
+  .tagline code { font-family: var(--mono); font-size: 0.9em; }
   .offline-chip {
     font-family: var(--mono);
     font-size: 11px;
@@ -111,25 +112,6 @@
     padding: 5px 12px;
     white-space: nowrap;
   }
-
-  .banner {
-    margin: 22px 0 0;
-    padding: 12px 16px;
-    border-radius: var(--radius);
-    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
-    background: var(--accent-soft);
-    font-size: 14px;
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .banner strong { color: var(--accent); }
-  .banner.exposed {
-    border-color: color-mix(in srgb, var(--danger) 45%, transparent);
-    background: var(--danger-soft);
-  }
-  .banner.exposed strong { color: var(--danger); }
-  .banner code { font-family: var(--mono); font-size: 0.9em; }
 
   /* ---------- live derivation strip ---------- */
   .derivation {
@@ -226,8 +208,9 @@
     color: var(--ink-soft);
     margin-bottom: 6px;
   }
+  .field label span { text-transform: none; font-weight: 400; }
   .hint { font-size: 13px; color: var(--ink-faint); margin: 6px 0 0; }
-  input[type="text"], input[type="password"], input[type="email"], textarea, select {
+  input[type="text"], input[type="password"], input[type="email"] {
     width: 100%;
     font-family: var(--mono);
     font-size: 14px;
@@ -237,67 +220,17 @@
     border-radius: var(--radius);
     padding: 9px 11px;
   }
-  select { font-family: var(--sans); }
-  textarea { line-height: 1.5; resize: vertical; }
-  input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible {
+  input:focus-visible, button:focus-visible, a:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
   input[aria-invalid="true"] { border-color: var(--danger); }
-  input[type="file"] {
-    width: 100%;
-    font-family: var(--sans);
-    font-size: 14px;
-    color: var(--ink-soft);
-    background: var(--surface);
-    border: 1px dashed var(--rule-strong);
-    border-radius: var(--radius);
-    padding: 10px 11px;
-    cursor: pointer;
-  }
-  input[type="file"]::file-selector-button {
-    font-family: var(--sans);
-    font-size: 13px;
-    font-weight: 600;
-    margin-right: 12px;
-    padding: 6px 13px;
-    border: 1px solid var(--rule-strong);
-    border-radius: var(--radius);
-    background: var(--sunk);
-    color: var(--ink);
-    cursor: pointer;
-  }
-  input[type="file"]:hover { border-color: var(--accent); }
-
-  input:disabled, select:disabled {
-    background: var(--sunk);
-    color: var(--ink-soft);
-    cursor: not-allowed;
-  }
   .err {
     display: block;
     color: var(--danger);
     font-size: 13px;
     margin-top: 6px;
   }
-  .pair { display: flex; gap: 8px; align-items: flex-start; }
-  .pair input { flex: 1; }
-
-  .segmented { display: inline-flex; border: 1px solid var(--rule-strong); border-radius: var(--radius); overflow: hidden; }
-  .segmented button {
-    font-family: var(--sans);
-    font-size: 13px;
-    font-weight: 500;
-    padding: 8px 16px;
-    border: none;
-    background: var(--surface);
-    color: var(--ink-soft);
-    cursor: pointer;
-  }
-  .segmented button + button { border-left: 1px solid var(--rule-strong); }
-  .segmented button:hover { background: var(--sunk); }
-  .segmented button[aria-checked="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
-
 
   /* ---------- buttons ---------- */
   button.act {
@@ -341,19 +274,6 @@
   .note.warn { border-left-color: var(--warn); }
   .note.warn strong { color: var(--warn); }
   .note code, p code, li code, dd code { font-family: var(--mono); font-size: 0.9em; }
-
-  /* ---------- checklist ---------- */
-  ul.checks { list-style: none; padding: 0; margin: 0 0 26px; max-width: 62ch; }
-  ul.checks li {
-    display: flex;
-    gap: 10px;
-    padding: 7px 0;
-    border-bottom: 1px solid var(--rule);
-    font-size: 14px;
-    color: var(--ink-soft);
-  }
-  ul.checks li::before { content: "▢"; color: var(--ink-faint); }
-  ul.checks li b { color: var(--ink); font-weight: 600; }
 
   /* ---------- output ---------- */
   .out-head {
@@ -431,30 +351,23 @@
   <header class="masthead">
     <div>
       <h1>bytEM Deployment Wizard</h1>
-      <p class="tagline">Fills in <code>.env</code> for a public bytEM instance, so you don't have to answer <code>env_setup.sh</code> prompts on the server.</p>
+      <p class="tagline">Composes the <code>env_setup.sh</code> and <code>install.sh</code> commands for a public bytEM instance. <code>env_setup.sh</code> writes <code>.env</code> on the server.</p>
     </div>
     <span class="offline-chip">runs entirely in this tab · no network calls</span>
   </header>
 
-  <div class="banner" id="banner" hidden>
-    <strong id="banner-title"></strong>
-    <span id="banner-body"></span>
-  </div>
-
-  <dl class="derivation" id="derivation">
+  <dl class="derivation">
     <div><dt>Application</dt><dd id="d-app">—</dd></div>
     <div><dt>Matrix homeserver</dt><dd id="d-matrix">—</dd></div>
-    <div><dt>Test / admin account</dt><dd id="d-test">—</dd></div>
-    <div><dt>Bot account</dt><dd id="d-bot">—</dd></div>
+    <div><dt>Administrator</dt><dd id="d-admin">—</dd></div>
   </dl>
 
   <div class="work">
     <nav class="rail" id="rail" aria-label="Setup steps">
-      <button type="button" data-go="0" aria-current="true"><span class="num">01</span> Domains <span class="flag" data-flag="0"></span></button>
-      <button type="button" data-go="1"><span class="num">02</span> Accounts <span class="flag" data-flag="1"></span></button>
-      <button type="button" data-go="2"><span class="num">03</span> Federation &amp; TLS <span class="flag" data-flag="2"></span></button>
-      <button type="button" data-go="3"><span class="num">04</span> Upgrade <span class="flag" data-flag="3"></span></button>
-      <button type="button" data-go="4"><span class="num">05</span> Install <span class="flag" data-flag="4"></span></button>
+      <button type="button" data-go="0" aria-current="true"><span class="num">01</span> Server <span class="flag" data-flag="0"></span></button>
+      <button type="button" data-go="1"><span class="num">02</span> Credentials <span class="flag" data-flag="1"></span></button>
+      <button type="button" data-go="2"><span class="num">03</span> Upgrade <span class="flag" data-flag="2"></span></button>
+      <button type="button" data-go="3"><span class="num">04</span> Install <span class="flag" data-flag="3"></span></button>
     </nav>
 
     <div>
@@ -462,82 +375,64 @@
       <!-- STEP 1 -->
       <section class="panel active" data-panel="0">
         <h2>Where this instance lives</h2>
-        <p class="intro">Both names are derived, not typed. The Matrix name becomes part of every MXID and room alias on this server, so it cannot be changed after the first start without breaking federation identity.</p>
+        <p class="intro">The application and Matrix names are derived from the deployment domain. The Matrix name is part of every user ID and room alias on this server and cannot change after the first start.</p>
 
         <div class="field">
-          <label>Deployment target</label>
-          <div class="segmented" role="radiogroup" aria-label="Deployment target">
-            <button type="button" role="radio" aria-checked="true" data-mode="public">Public server</button>
-            <button type="button" role="radio" aria-checked="false" data-mode="local">Local machine</button>
-          </div>
-          <p class="hint" id="mode-hint">A reachable host with public DNS and Let's Encrypt certificates.</p>
-        </div>
-
-        <div class="field" id="domain-field">
-          <label for="f-domain">Base domain</label>
-          <input type="text" id="f-domain" placeholder="the domain this host answers on" spellcheck="false" autocomplete="off">
-          <p class="hint" id="domain-hint">The domain you control DNS for, without a scheme or trailing dot. On the host, <code>hostname -d</code> prints it.</p>
+          <label for="f-domain">Deployment domain</label>
+          <input type="text" id="f-domain" placeholder="de.cities.app" spellcheck="false" autocomplete="off">
+          <p class="hint">Without a scheme or trailing dot. <code>bytem.</code> and <code>matrix.</code> under it must resolve to this host, with TCP 80, 443 and 8448 open.</p>
           <span class="err" id="e-domain" hidden></span>
         </div>
 
         <div class="field">
-          <label for="f-prefix">Instance prefix <span style="text-transform:none;font-weight:400">— optional</span></label>
-          <input type="text" id="f-prefix" placeholder="leave empty for a single instance" spellcheck="false" autocomplete="off">
-          <p class="hint">Distinguishes several bytEM instances sharing one domain.</p>
-          <span class="err" id="e-prefix" hidden></span>
+          <label for="f-admin">Administrator username</label>
+          <input type="text" id="f-admin" value="admin" spellcheck="false" autocomplete="off">
+          <p class="hint">Localpart only. Becomes a Synapse admin.</p>
+          <span class="err" id="e-admin" hidden></span>
         </div>
 
-        <p class="hint" id="note-public" style="max-width:62ch">Both names need to resolve here, with TCP 80, 443 and 8448 reachable, by the time you run the installer — 80 for certificate issuance, 8448 for federation.</p>
+        <div class="field">
+          <label for="f-pass">Administrator password <span>— optional</span></label>
+          <input type="password" id="f-pass" autocomplete="new-password">
+          <p class="hint">Empty: <code>env_setup.sh</code> generates one and writes it to <code>.env</code> as <code>MATRIX_ADMIN_PASSWORD</code>.</p>
+          <span class="err" id="e-pass" hidden></span>
+        </div>
 
-        <p class="note" id="note-localhost" hidden>Names under <code>.localhost</code> are reserved for loopback by RFC 6761, and glibc and systemd-resolved answer them without any DNS or <code>/etc/hosts</code> entry — so this needs no configuration and works offline. If your resolver is one of the few that doesn't, add one line: <code>127.0.0.1 bytem.localhost matrix.bytem.localhost</code>.</p>
+        <div class="field">
+          <label for="f-email">Certificate e-mail <span>— optional</span></label>
+          <input type="email" id="f-email" placeholder="admin@ your domain" spellcheck="false" autocomplete="off">
+          <p class="hint">Let's Encrypt expiry notices.</p>
+          <span class="err" id="e-email" hidden></span>
+        </div>
 
-        <p class="note" id="note-local" hidden><strong>Certificates are generated locally.</strong> <code>certbot.sh --self-signed</code> writes a 30-day certificate for each name with <code>openssl</code> — no Let's Encrypt, no DNS, no reachable ports. Your browser will warn once per name; accept both and it stops asking. For certificates your browser trusts outright, <code>mkcert -install</code> then <code>mkcert bytem.localhost matrix.bytem.localhost</code> into <code>certbot/conf/live/</code> works too. A local instance cannot federate: Everything inside the stack works — the PWA, the API gateway, the bot, Synapse, Solr and RabbitMQ — and you can publish and index DEIDs, because a DEID is an identifier the stack never fetches. What needs a public name is exchange with <em>other</em> bytEM instances, which requires real TLS on port 8448. Certificates will be self-signed, so browsers warn once per name and you accept both.</p>
-
-        <p class="note" id="note-promote" hidden>Treat a local instance as disposable. Its Matrix name is baked into every MXID and room alias, so it cannot later be promoted to a public deployment — you would install fresh against the real domain.</p>
-
-        <div class="actions"><button type="button" class="act" data-go="1">Continue to accounts</button></div>
+        <div class="actions"><button type="button" class="act" data-go="1">Continue</button></div>
       </section>
 
       <!-- STEP 2 -->
       <section class="panel" data-panel="1">
-        <h2>Two separate accounts</h2>
-        <p class="intro">Synapse creates both on its first healthy start. Earlier bytEM releases let the bot double as the test admin; it no longer does, and the installer refuses a configuration that reuses either credential.</p>
+        <h2>External credentials</h2>
+        <p class="intro">All optional. Each can be added to <code>.env</code> later.</p>
 
         <div class="field">
-          <label for="f-tuser">Test / admin username</label>
-          <input type="text" id="f-tuser" value="admin" spellcheck="false" autocomplete="off">
-          <p class="hint">A person signs in with this to exercise the instance. Becomes a Synapse admin.</p>
-          <span class="err" id="e-tuser" hidden></span>
+          <label for="f-token">DOMAIN_REPO_TOKEN <span>— optional</span></label>
+          <input type="password" id="f-token" autocomplete="off">
+          <p class="hint">Write token for the DEID domain repository. Empty: DEIDs are read only and DEID writes answer 503.</p>
+          <span class="err" id="e-token" hidden></span>
         </div>
 
         <div class="field">
-          <label for="f-tpass">Test / admin password</label>
-          <div class="pair">
-            <input type="password" id="f-tpass" autocomplete="new-password">
-            <button type="button" class="tiny" data-fill="f-tpass">Generate</button>
-          </div>
-          <span class="err" id="e-tpass" hidden></span>
+          <label for="f-stripe">STRIPE_SECRET_KEY <span>— optional</span></label>
+          <input type="password" id="f-stripe" autocomplete="off">
+          <p class="hint">Stripe secret key for priced access (<code>sk_test_…</code> in a sandbox). Empty: priced products answer 503.</p>
+          <span class="err" id="e-stripe" hidden></span>
         </div>
 
         <div class="field">
-          <label for="f-buser">Bot username</label>
-          <input type="text" id="f-buser" value="bot" spellcheck="false" autocomplete="off">
-          <p class="hint">Used only by <code>bytem-be</code> and <code>bytem-bot</code>. Nobody signs in as this.</p>
-          <span class="err" id="e-buser" hidden></span>
+          <label for="f-sigil">SIGIL_PRIVATE_KEY <span>— optional</span></label>
+          <input type="password" id="f-sigil" autocomplete="off" spellcheck="false">
+          <p class="hint">64 hex characters. The market's signing identity for exchanged data. Only needed when moving an existing market to a new server; empty generates a new one.</p>
+          <span class="err" id="e-sigil" hidden></span>
         </div>
-
-        <div class="field">
-          <label for="f-bpass">Bot password</label>
-          <div class="pair">
-            <input type="password" id="f-bpass" autocomplete="new-password">
-            <button type="button" class="tiny" data-fill="f-bpass">Generate</button>
-          </div>
-          <span class="err" id="e-bpass" hidden></span>
-        </div>
-
-        <p class="note">Allowed in passwords: letters, digits and <code>. _ : / @ % + = , -</code>. Other characters are rejected because they need quoting inside an env file.</p>
-
-        <p class="note warn"><strong>Passwords apply on first start only.</strong> Synapse creates each account once; re-running the installer with a different password leaves the existing account's password unchanged. To rotate one later, use <code>docker exec bytem-synapse</code> or the Synapse admin API.</p>
 
         <div class="actions">
           <button type="button" class="act ghost" data-go="0">Back</button>
@@ -547,73 +442,19 @@
 
       <!-- STEP 3 -->
       <section class="panel" data-panel="2">
-        <h2>Federation and certificates</h2>
-        <p class="intro" id="fed-intro">Synapse rebuilds its federation whitelist from the market list every time the container starts. These defaults suit a standard public instance.</p>
+        <h2>Upgrading an existing instance</h2>
+        <p class="intro">On a server that already runs bytEM, keep <code>.env</code> and run <code>./install.sh</code>. It pulls the new images and restarts the stack.</p>
 
-        <p class="note" id="fed-local" hidden>These still get written to <code>.env</code>, and Synapse still builds a whitelist from them at start. On a local instance nothing can reach the whitelisted servers, so the values only matter if you later reuse this file for a public install. Enforcement is held at permissive so an unreachable market list cannot stop the container.</p>
-
-        <div class="field" id="email-field">
-          <label for="f-email">Certificate contact address</label>
-          <input type="email" id="f-email" placeholder="derived from your domain" spellcheck="false" autocomplete="off">
-          <p class="hint">Let's Encrypt expiry notices. Left empty, it derives to <code>admin@</code> your application domain.</p>
-          <span class="err" id="e-email" hidden></span>
-        </div>
-
-        <div class="field">
-          <label for="f-market">Market list URL</label>
-          <input type="text" id="f-market" value="https://bytem.app/markets/byteM-market-list" spellcheck="false" autocomplete="off">
-          <p class="hint">Source for the set of instances this server will federate with.</p>
-          <span class="err" id="e-market" hidden></span>
-        </div>
-
-        <div class="field">
-          <label for="f-extra">Additional federated domains</label>
-          <input type="text" id="f-extra" value="matrix.org" spellcheck="false" autocomplete="off">
-          <p class="hint">Comma-separated, appended to whatever the market list returns.</p>
-          <span class="err" id="e-extra" hidden></span>
-        </div>
-
-        <div class="field">
-          <label for="f-strict">Whitelist enforcement</label>
-          <select id="f-strict">
-            <option value="0" selected>Permissive — start even if the market list is unreachable</option>
-            <option value="1">Strict — refuse to start without a usable market list</option>
-          </select>
-        </div>
+        <p class="note">Re-run <code>env_setup.sh</code> only to change the domain or administrator. It keeps every secret already in <code>.env</code>, backs the old file up, and needs <code>--force</code> when <code>.env</code> exists.</p>
 
         <div class="actions">
           <button type="button" class="act ghost" data-go="1">Back</button>
-          <button type="button" class="act" data-go="3" id="nav-after-fed">Continue</button>
+          <button type="button" class="act" data-go="3">Show commands</button>
         </div>
       </section>
 
       <!-- STEP 4 -->
       <section class="panel" data-panel="3">
-        <h2>Upgrading an existing instance</h2>
-        <p class="intro">Nothing to do here if the banner at the top says an existing <code>.env</code> was read — it already happened. This step is the fallback for when it can't be: opening this file directly off disk, or configuring one machine from another. Skip it entirely on a first installation.</p>
-
-        <p class="note warn"><strong>Regenerating Synapse secrets invalidates sessions and can break this server's federation identity.</strong> <code>REGISTRATION_SHARED_SECRET</code>, <code>SYNAPSE_MACAROON_SECRET_KEY</code>, <code>SYNAPSE_FORM_SECRET</code> and <code>JWT_SECRET</code> must survive an upgrade. So must the database and Solr passwords, or the existing volumes stop opening.</p>
-
-        <div class="field">
-          <label for="f-envfile">Choose your <code>.env</code> file</label>
-          <input type="file" id="f-envfile" accept=".env,text/plain">
-          <p class="hint">Read in the browser only — the file is not uploaded anywhere.</p>
-        </div>
-
-        <div class="field" style="max-width:100%">
-          <label for="f-existing">Or paste it</label>
-          <textarea id="f-existing" rows="7" spellcheck="false" placeholder="the contents of .env"></textarea>
-          <p class="hint" id="carry-report">Nothing pasted — every secret below will be newly generated.</p>
-        </div>
-
-        <div class="actions">
-          <button type="button" class="act ghost" data-go="2">Back</button>
-          <button type="button" class="act" data-go="4">Generate configuration</button>
-        </div>
-      </section>
-
-      <!-- STEP 5 -->
-      <section class="panel" data-panel="4">
         <h2>Install</h2>
 
         <div class="blocked" id="blocked" hidden>
@@ -622,33 +463,23 @@
         </div>
 
         <div id="output-body">
-          <p class="intro" id="install-intro">Run these on the Docker host, from the root of your <code>bytEM-public</code> clone.</p>
+          <p class="intro">Run these on the Docker host, from the root of your <code>bytEM-public</code> clone.</p>
 
           <div class="step-cmd">
-            <h4><span class="n">01</span> Write the environment file</h4>
-            <p>The quoted heredoc marker stops the shell touching anything inside, so passwords with <code>$</code> or <code>%</code> land verbatim.</p>
-            <div class="out-head">
-              <h3>paste into your terminal</h3>
-              <div class="out-tools">
-                <button type="button" class="tiny" id="btn-reveal">Reveal secrets</button>
-                <button type="button" class="tiny" id="btn-copy-env">Copy</button>
-              </div>
-            </div>
-            <pre class="out" id="out-env">—</pre>
-          </div>
-
-          <div class="step-cmd">
-            <h4><span class="n">02</span> Start the stack</h4>
-            <p id="run-copy"><code>install.sh</code> validates the file, pulls the published images, obtains certificates for both names, migrates any legacy Synapse data directory into the <code>bytem-synapse-data</code> volume, then waits on health checks.</p>
+            <h4><span class="n">01</span> Write .env and start the stack</h4>
+            <p>The line starts with a space, which keeps it out of shell history when <code>HISTCONTROL</code> includes <code>ignorespace</code> (the default on Ubuntu). <code>install.sh</code> pulls the published images, obtains certificates for both names and waits on health checks.</p>
             <div class="out-head">
               <h3>terminal</h3>
-              <div class="out-tools"><button type="button" class="tiny" id="btn-copy-run">Copy</button></div>
+              <div class="out-tools">
+                <button type="button" class="tiny" id="btn-reveal">Reveal secrets</button>
+                <button type="button" class="tiny" id="btn-copy-run">Copy</button>
+              </div>
             </div>
             <pre class="out" id="out-run">—</pre>
           </div>
 
           <div class="step-cmd">
-            <h4><span class="n">03</span> Verify</h4>
+            <h4><span class="n">02</span> Verify</h4>
             <p>Both endpoints should answer before you hand the instance to anyone.</p>
             <div class="out-head">
               <h3>terminal</h3>
@@ -657,11 +488,11 @@
             <pre class="out" id="out-verify">—</pre>
           </div>
 
-          <p class="note warn"><strong>This file is the instance.</strong> It holds every credential and the Synapse secrets that establish this server's identity. <code>install.sh</code> never rewrites it and no access token is ever written back into it — the bot mints its own at runtime. Back it up somewhere encrypted, keep it out of git, and clear it from your shell history with <code>history -d</code> after pasting.</p>
+          <p class="note warn"><strong>.env is the instance.</strong> It holds every credential and the signing key. Back it up somewhere encrypted and keep it out of git.</p>
         </div>
 
         <div class="actions">
-          <button type="button" class="act ghost" data-go="3" id="nav-before-install">Back</button>
+          <button type="button" class="act ghost" data-go="2">Back</button>
         </div>
       </section>
 
@@ -669,7 +500,7 @@
   </div>
 
   <footer class="foot">
-    This page only composes text. It never contacts a server, and nothing you type leaves the tab — open it from a local clone if you would rather not trust that claim to a hosted copy. It replaces the prompts in <code>env_setup.sh</code>; <code>install.sh</code> still does the actual work on the host.
+    This page only composes text. It never contacts a server, and nothing you type leaves the tab.
   </footer>
 
 </div>
@@ -678,290 +509,76 @@
 (function () {
   "use strict";
 
+  // Same patterns as env_setup.sh.
   var RE_DOMAIN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/;
-  var RE_PREFIX = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
   var RE_USER   = /^[a-z0-9._=-]+$/;
+  var RE_HEX64  = /^[0-9a-fA-F]{64}$/;
+  // .env is written unquoted and sourced by install.sh, so values stay in this set.
   var RE_ENVVAL = /^[A-Za-z0-9._:/@%+=,-]+$/;
-
-  // Mirrors `openssl rand -hex N` in env_setup.sh.
-  function randHex(bytes) {
-    var a = new Uint8Array(bytes);
-    crypto.getRandomValues(a);
-    return Array.prototype.map.call(a, function (b) {
-      return b.toString(16).padStart(2, "0");
-    }).join("");
-  }
-
-  // Password-safe generator: stays inside the env-file charset above.
-  function genPassword() {
-    var alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-    var a = new Uint8Array(20);
-    crypto.getRandomValues(a);
-    return Array.prototype.map.call(a, function (b) { return alphabet[b % alphabet.length]; }).join("");
-  }
+  // The password rule env_setup.sh enforces.
+  var RE_PASSWORD = /^[A-Za-z0-9._~@%+=,:#!-]+$/;
 
   var $ = function (id) { return document.getElementById(id); };
-
-  // Secrets are minted once per page load, then preserved unless an existing
-  // .env supplies its own — matching env_setup.sh, which never rotates a value
-  // it can read back from the previous file.
-  var minted = {
-    RABBITMQ_DEFAULT_USER: "bytem",
-    RABBITMQ_DEFAULT_PASS: randHex(16),
-    SYNAPSE_POSTGRES_PASSWORD: randHex(16),
-    SOLR_USER: "solr",
-    SOLR_PASSWORD: randHex(16),
-    REGISTRATION_SHARED_SECRET: randHex(32),
-    SYNAPSE_MACAROON_SECRET_KEY: randHex(32),
-    SYNAPSE_FORM_SECRET: randHex(32),
-    JWT_SECRET: randHex(32)
-  };
-  var CARRYABLE = Object.keys(minted);
-
   var revealed = false;
-  var current = 0;
-  var mode = "public";
-  var publicDomain = "";
-  var DOMAIN_HINT = "The domain you control DNS for, without a scheme or trailing dot. On the host, hostname -d prints it.";
-
-  // RFC 6761 reserves .localhost for loopback, and glibc / systemd-resolved
-  // answer any label under it with 127.0.0.1 and ::1 — no DNS, no hosts file,
-  // works offline. bytem.localhost keeps the dot that a Matrix server name
-  // needs, which a bare "localhost" would not have.
-  var LOCAL_BASE = "localhost";
-
-  function parseEnv(text) {
-    var found = {};
-    text.split(/\r?\n/).forEach(function (line) {
-      var t = line.trim();
-      if (!t || t.charAt(0) === "#") return;
-      var eq = t.indexOf("=");
-      if (eq < 1) return;
-      var key = t.slice(0, eq).trim();
-      var val = t.slice(eq + 1).trim();
-      if (val) found[key] = val;
-    });
-    return found;
-  }
 
   function state() {
-    var isLocal = mode === "local";
-    var domain = isLocal ? LOCAL_BASE : $("f-domain").value.trim().toLowerCase();
-    var prefix = $("f-prefix").value.trim().toLowerCase();
-    var app = domain ? (prefix ? "bytem." + prefix + "." + domain : "bytem." + domain) : "";
-    var carried = parseEnv($("f-existing").value);
-
-    var secrets = {};
-    CARRYABLE.forEach(function (k) {
-      secrets[k] = carried[k] || minted[k];
-    });
-
+    var domain = $("f-domain").value.trim().toLowerCase().replace(/\.$/, "");
     return {
-      isLocal: isLocal,
       domain: domain,
-      prefix: prefix,
-      app: app,
-      matrix: app ? "matrix." + app : "",
-      tuser: $("f-tuser").value.trim().toLowerCase(),
-      tpass: $("f-tpass").value,
-      buser: $("f-buser").value.trim().toLowerCase(),
-      bpass: $("f-bpass").value,
-      email: $("f-email").value.trim() || (app ? "admin@" + app : ""),
-      market: $("f-market").value.trim(),
-      extra: $("f-extra").value.trim(),
-      strict: isLocal ? "0" : $("f-strict").value,
-      secrets: secrets,
-      carriedCount: CARRYABLE.filter(function (k) { return !!carried[k]; }).length
+      app: domain ? "bytem." + domain : "",
+      matrix: domain ? "matrix." + domain : "",
+      admin: $("f-admin").value.trim().toLowerCase(),
+      pass: $("f-pass").value,
+      email: $("f-email").value.trim(),
+      token: $("f-token").value.trim(),
+      stripe: $("f-stripe").value.trim(),
+      sigil: $("f-sigil").value.trim()
     };
   }
 
   // One problem list, reused by the field errors, the rail flags and the
-  // install step — so the wizard can never disagree with itself about whether
-  // the configuration is usable.
+  // install step.
   function problems(s) {
     var p = [];
     function add(step, field, msg) { p.push({ step: step, field: field, msg: msg }); }
-
-    // Local mode supplies "localhost", which RE_DOMAIN rejects for having no
-    // dot — correctly, for a public deployment. The derived bytem.localhost is
-    // what Synapse actually receives, and that does carry one.
-    if (!s.isLocal) {
-      if (!s.domain) add(0, "domain", "A base domain is required.");
-      else if (!RE_DOMAIN.test(s.domain)) add(0, "domain", "Not a valid domain name: " + s.domain);
-    }
-    if (s.prefix && !RE_PREFIX.test(s.prefix)) add(0, "prefix", "A prefix may contain only lowercase letters, digits and hyphens.");
-
-    if (!s.tuser) add(1, "tuser", "A test/admin username is required.");
-    else if (!RE_USER.test(s.tuser)) add(1, "tuser", "Allowed: lowercase letters, digits and . _ = -");
-    if (!s.buser) add(1, "buser", "A bot username is required.");
-    else if (!RE_USER.test(s.buser)) add(1, "buser", "Allowed: lowercase letters, digits and . _ = -");
-    if (s.tuser && s.buser && s.tuser === s.buser) {
-      add(1, "buser", "The bot must not reuse the test/admin username — install.sh rejects this.");
+    function envSafe(step, field, v) {
+      if (v && !RE_ENVVAL.test(v)) add(step, field, "Allowed: letters, digits and . _ : / @ % + = , -");
     }
 
-    if (!s.tpass) add(1, "tpass", "A test/admin password is required.");
-    else if (!RE_ENVVAL.test(s.tpass)) add(1, "tpass", "Contains a character that is unsafe in an env file.");
-    if (!s.bpass) add(1, "bpass", "A bot password is required.");
-    else if (!RE_ENVVAL.test(s.bpass)) add(1, "bpass", "Contains a character that is unsafe in an env file.");
-
-    if (s.email && !RE_ENVVAL.test(s.email)) add(2, "email", "Contains a character that is unsafe in an env file.");
-    if (!s.market) add(2, "market", "A market list URL is required.");
-    else if (!RE_ENVVAL.test(s.market)) add(2, "market", "Contains a character that is unsafe in an env file.");
-    if (s.extra && !RE_ENVVAL.test(s.extra)) add(2, "extra", "Contains a character that is unsafe in an env file.");
-
+    if (!s.domain) add(0, "domain", "A deployment domain is required.");
+    else if (!RE_DOMAIN.test(s.domain)) add(0, "domain", "Not a valid domain name: " + s.domain);
+    if (!s.admin) add(0, "admin", "An administrator username is required.");
+    else if (!RE_USER.test(s.admin)) add(0, "admin", "Allowed: lowercase letters, digits and . _ = -");
+    if (s.pass && !RE_PASSWORD.test(s.pass)) add(0, "pass", "Allowed: letters, digits and . _ ~ @ % + = , : # ! -");
+    envSafe(0, "email", s.email);
+    envSafe(1, "token", s.token);
+    envSafe(1, "stripe", s.stripe);
+    if (s.sigil && !RE_HEX64.test(s.sigil)) add(1, "sigil", "Must be exactly 64 hex characters.");
     return p;
   }
 
-  // Mirrors .env.template key for key and in order. Both are edited by hand;
-  // if you add a variable there, add it here too.
-  function buildEnv(s) {
-    var k = s.secrets;
-    return [
-      "# BytEM public deployment configuration",
-      "NODE_ENV=production",
-      "BYTEM_INSTANCE=bytem",
-      "",
-      "# Public instance addresses",
-      "BYTEM_DOMAIN=" + s.app,
-      "DOMAIN_NAME=" + s.app,
-      "DEFAULT_DEID_DOMAIN=" + s.domain,
-      "MATRIX_DOMAIN=" + s.matrix,
-      "MATRIX_SERVER=https://" + s.matrix,
-      "SYNAPSE_PUBLIC_BASEURL=https://" + s.matrix,
-      "MATRIX_SERVER_NAME=" + s.matrix,
-      "MATRIX_SERVER_PROTOCOL=https",
-      "MATRIX_PORT=8008",
-      "API_HOST=https://" + s.app,
-      "API_HOST_INTERNAL=http://localhost:3000",
-      "EXCHANGE_PORT=3000",
-      "EXCHANGE_SERVER_PROTOCOL=https",
-      "",
-      "# Matrix room aliases",
-      'SUPPLY_INDEX_ROOM_ALIAS="#bytem-supply-index-room:' + s.matrix + '"',
-      'DEMAND_INDEX_ROOM_ALIAS="#bytem-demand-index-room:' + s.matrix + '"',
-      "",
-      "# Bot account. The bot and backend obtain and refresh the access token at runtime",
-      "# using these credentials; a token does not need to be pasted into this file.",
-      "BOT_USERNAME=" + s.buser,
-      "BOT_PASSWORD=" + s.bpass,
-      "BOT_USER_ID=@" + s.buser + ":" + s.matrix,
-      "BOT_USER_ACCESS_TOKEN=",
-      "",
-      "# Interactive test/admin account. These credentials are deliberately separate",
-      "# from the bot credentials. Synapse creates both users on its first start.",
-      "TEST_USERNAME=" + s.tuser,
-      "TEST_PASSWORD=" + s.tpass,
-      "MATRIX_ADMIN_USER=@" + s.tuser + ":" + s.matrix,
-      "MATRIX_ADMIN_USERNAME=" + s.tuser,
-      "MATRIX_ADMIN_PASSWORD=" + s.tpass,
-      "SYNAPSE_ADMIN_TOKEN=",
-      "",
-      "# RabbitMQ",
-      "RABBITMQ_URL=amqp://" + s.app + ":5672/bytem",
-      "RABBITMQ_DEFAULT_USER=" + k.RABBITMQ_DEFAULT_USER,
-      "RABBITMQ_DEFAULT_PASS=" + k.RABBITMQ_DEFAULT_PASS,
-      "RABBITMQ_DEFAULT_VHOST=bytem",
-      "",
-      "# Solr",
-      "SOLR_URL=http://" + s.app + ":8983",
-      "SOLR_USER=" + k.SOLR_USER,
-      "SOLR_PASSWORD=" + k.SOLR_PASSWORD,
-      "",
-      "# PostgreSQL / Synapse",
-      "POSTGRES_HOST=bytem-synapse-db",
-      "POSTGRES_USER=synapse",
-      "POSTGRES_DB=synapse",
-      "POSTGRES_PASSWORD=" + k.SYNAPSE_POSTGRES_PASSWORD,
-      "SYNAPSE_POSTGRES_PASSWORD=" + k.SYNAPSE_POSTGRES_PASSWORD,
-      "",
-      "# Stable secrets. Preserve these and the Docker volumes across upgrades.",
-      "REGISTRATION_SHARED_SECRET=" + k.REGISTRATION_SHARED_SECRET,
-      "SYNAPSE_MACAROON_SECRET_KEY=" + k.SYNAPSE_MACAROON_SECRET_KEY,
-      "SYNAPSE_FORM_SECRET=" + k.SYNAPSE_FORM_SECRET,
-      "JWT_SECRET=" + k.JWT_SECRET,
-      "",
-      "# Federation",
-      "FEDERATION_ENABLED=true",
-      "MARKET_LIST=" + s.market,
-      "FEDERATION_MARKET_LIST_URL=" + s.market,
-      "FEDERATION_EXTRA_DOMAINS=" + s.extra,
-      "FEDERATION_STRICT=" + s.strict,
-      "",
-      "# Application settings",
-      "BOT_PORT=4000",
-      "NODE_MODE=demand-supply",
-      "INDEX_AUTO_REINDEX=on",
-      "INDEX_AUTO_REINDEX_MS=600000",
-      "INDEX_AUTO_REINDEX_BATCH=500",
-      "INDEX_AUTO_REINDEX_COOLDOWN_MS=21600000",
-      "INDEX_AUTO_REINDEX_START_MS=120000",
-      "DQ_CONCURRENCY=2",
-      "DOMAIN_LIST=https://bytem.app/domain/domain-list.json",
-      "BYTEM_SCHEMA_URL=https://bytem.app/schema/",
-      "MAX_FILE_SIZE=52428800",
-      "ENABLE_LOGGING=true",
-      "SSL_EMAIL=" + s.email,
-      "",
-      "# The PWA owns both the public and operator UI routes. Its runtime URLs are",
-      "# derived from API_HOST and MATRIX_SERVER by docker-compose.yaml.",
-      "NEXT_PUBLIC_DEMAND_PRODUCT_DEID=https://cities.app/de/he/water/water-quality",
-      ""
-    ].join("\n");
-  }
+  function sq(v) { return "'" + v.replace(/'/g, "'\\''") + "'"; }
 
-  function heredoc(envText) {
-    return "cat > .env <<'BYTEM_ENV'\n" + envText + "BYTEM_ENV\nchmod 600 .env";
-  }
-
-  var SECRET_KEYS = [
-    "BOT_PASSWORD", "TEST_PASSWORD", "MATRIX_ADMIN_PASSWORD",
-    "RABBITMQ_DEFAULT_PASS", "SOLR_PASSWORD", "POSTGRES_PASSWORD",
-    "SYNAPSE_POSTGRES_PASSWORD", "REGISTRATION_SHARED_SECRET",
-    "SYNAPSE_MACAROON_SECRET_KEY", "SYNAPSE_FORM_SECRET", "JWT_SECRET"
-  ];
-
-  function mask(text) {
-    return text.split("\n").map(function (line) {
-      var eq = line.indexOf("=");
-      if (eq < 1) return line;
-      var key = line.slice(0, eq);
-      if (SECRET_KEYS.indexOf(key) === -1) return line;
-      var val = line.slice(eq + 1);
-      if (!val) return line;
-      return key + "=" + "•".repeat(Math.min(val.length, 24));
-    }).join("\n");
+  function command(s, masked) {
+    var vars = [
+      ["MATRIX_ADMIN_PASSWORD", s.pass, true],
+      ["SSL_EMAIL", s.email, false],
+      ["DOMAIN_REPO_TOKEN", s.token, true],
+      ["STRIPE_SECRET_KEY", s.stripe, true],
+      ["SIGIL_PRIVATE_KEY", s.sigil, true]
+    ];
+    var parts = vars.filter(function (v) { return v[1]; }).map(function (v) {
+      var val = masked && v[2] ? "•".repeat(Math.min(v[1].length, 24)) : v[1];
+      return v[0] + "=" + sq(val);
+    });
+    parts.push("./env_setup.sh --domain " + s.domain + " --admin-user " + s.admin + " --non-interactive");
+    return " " + parts.join(" ") + "\n./install.sh";
   }
 
   function render() {
     var s = state();
     var probs = problems(s);
 
-    // mode-dependent chrome
-    // Local mode shows the name it will use rather than hiding the field —
-    // seeing "localhost" is clearer than an empty space where a domain was.
-    $("f-domain").disabled = s.isLocal;
-    $("domain-hint").textContent = s.isLocal
-      ? "Fixed for a local install. Everything is derived from it and stays on this machine."
-      : DOMAIN_HINT;
-    $("note-localhost").hidden = !s.isLocal;
-    $("note-public").hidden = s.isLocal;
-    $("note-local").hidden = !s.isLocal;
-    $("note-promote").hidden = !s.isLocal;
-    $("email-field").hidden = s.isLocal;
-    $("fed-local").hidden = !s.isLocal;
-    $("f-strict").disabled = s.isLocal;
-    $("f-email").placeholder = s.app ? "admin@" + s.app : "derived from your domain";
-    $("mode-hint").textContent = s.isLocal
-      ? "One machine, loopback names and self-signed certificates. No DNS records, no open ports."
-      : "A reachable host with public DNS and Let's Encrypt certificates.";
-    $("fed-intro").textContent = s.isLocal
-      ? "Kept for completeness — a loopback instance has nothing to federate with."
-      : "Synapse rebuilds its federation whitelist from the market list every time the container starts. These defaults suit a standard public instance.";
-    document.querySelectorAll("[data-mode]").forEach(function (b) {
-      b.setAttribute("aria-checked", b.dataset.mode === mode ? "true" : "false");
-    });
-
-    // derivation strip
     function setD(id, value) {
       var el = $(id);
       el.textContent = value || "—";
@@ -969,94 +586,51 @@
     }
     setD("d-app", s.app ? "https://" + s.app : "");
     setD("d-matrix", s.matrix ? "https://" + s.matrix : "");
-    setD("d-test", s.tuser && s.matrix ? "@" + s.tuser + ":" + s.matrix : "");
-    setD("d-bot", s.buser && s.matrix ? "@" + s.buser + ":" + s.matrix : "");
+    setD("d-admin", s.admin && s.matrix ? "@" + s.admin + ":" + s.matrix : "");
+    $("f-email").placeholder = s.domain ? "admin@" + s.domain : "admin@ your domain";
 
-    // field errors
-    ["domain", "prefix", "tuser", "tpass", "buser", "bpass", "email", "market", "extra"].forEach(function (f) {
+    ["domain", "admin", "pass", "email", "token", "stripe", "sigil"].forEach(function (f) {
       var hit = probs.filter(function (p) { return p.field === f; })[0];
       var box = $("e-" + f);
-      var input = $("f-" + f);
-      if (box) {
-        box.hidden = !hit;
-        box.textContent = hit ? hit.msg : "";
-      }
-      if (input) {
-        if (hit) input.setAttribute("aria-invalid", "true");
-        else input.removeAttribute("aria-invalid");
-      }
+      box.hidden = !hit;
+      box.textContent = hit ? hit.msg : "";
+      if (hit) $("f-" + f).setAttribute("aria-invalid", "true");
+      else $("f-" + f).removeAttribute("aria-invalid");
     });
 
-    // rail flags
-    [0, 1, 2, 3, 4].forEach(function (step) {
+    [0, 1, 2, 3].forEach(function (step) {
       var flag = document.querySelector('[data-flag="' + step + '"]');
-      if (!flag) return;
       var n = probs.filter(function (p) { return p.step === step; }).length;
-      if (step === 4) {
+      if (step === 3) {
         flag.textContent = probs.length ? String(probs.length) : "✓";
         flag.className = "flag " + (probs.length ? "bad" : "ok");
-      } else if (n) {
-        flag.textContent = String(n);
-        flag.className = "flag bad";
       } else {
-        flag.textContent = "";
-        flag.className = "flag";
+        flag.textContent = n ? String(n) : "";
+        flag.className = n ? "flag bad" : "flag";
       }
     });
 
-    // carry report
-    var report = $("carry-report");
-    if (s.carriedCount) {
-      report.textContent = "Carrying " + s.carriedCount + " of " + CARRYABLE.length +
-        " existing values forward. Anything the pasted file does not define is generated fresh.";
-    } else {
-      report.textContent = "Nothing pasted — every secret below will be newly generated.";
-    }
-
-    // install step
-    var blocked = $("blocked");
     var list = $("blocked-list");
-    var body = $("output-body");
+    $("blocked").hidden = !probs.length;
+    $("output-body").hidden = !!probs.length;
     if (probs.length) {
-      blocked.hidden = false;
-      body.hidden = true;
       list.innerHTML = "";
       probs.forEach(function (p) {
         var li = document.createElement("li");
         li.textContent = p.msg;
         list.appendChild(li);
       });
-    } else {
-      blocked.hidden = true;
-      body.hidden = false;
-      var envText = buildEnv(s);
-      var full = heredoc(envText);
-      $("out-env").textContent = revealed ? full : mask(full);
-      $("out-env").dataset.raw = full;
-
-      // Pre-creating self-signed certificates makes install.sh skip its
-      // Let's Encrypt path, which cannot validate a loopback name.
-      $("out-run").textContent = s.isLocal
-        ? "chmod +x install.sh certbot.sh whitelist-sync.sh scripts/*.sh\n./certbot.sh --self-signed\n./install.sh"
-        : "chmod +x install.sh certbot.sh whitelist-sync.sh scripts/*.sh\n./install.sh";
-      $("run-copy").innerHTML = s.isLocal
-        ? "<code>certbot.sh --self-signed</code> writes 30-day certificates for both names first, so <code>install.sh</code> finds them present and skips Let's Encrypt. It then pulls the images, starts the stack and waits on health checks."
-        : "<code>install.sh</code> validates the file, pulls the published images, obtains certificates for both names, migrates any legacy Synapse data directory into the <code>bytem-synapse-data</code> volume, then waits on health checks.";
-
-      // -k on a self-signed instance: the certificate is untrusted by design.
-      var k = s.isLocal ? "-fsSk" : "-fsS";
-      $("out-verify").textContent =
-        "curl " + k + ' "https://' + s.app + '/api/auth/health"\n' +
-        "curl " + k + ' "https://' + s.matrix + '/_matrix/client/versions"\n' +
-        "./scripts/test_workflow.sh";
-      $("install-intro").textContent = s.isLocal
-        ? "Run these on your own machine, from the root of your bytEM-public clone. Docker Engine with Compose v2 and roughly 8 GB of free memory are the only prerequisites."
-        : "Run these on the Docker host, from the root of your bytEM-public clone.";
+      return;
     }
+    $("out-run").textContent = command(s, !revealed);
+    $("out-run").dataset.raw = command(s, false);
+    $("out-verify").textContent =
+      'curl -fsS "https://' + s.app + '/api/auth/health"\n' +
+      'curl -fsS "https://' + s.matrix + '/_matrix/client/versions"\n' +
+      "./scripts/test_workflow.sh";
   }
 
   function goto(step) {
-    current = step;
     document.querySelectorAll(".panel").forEach(function (p) {
       p.classList.toggle("active", Number(p.dataset.panel) === step);
     });
@@ -1087,30 +661,8 @@
   }
 
   document.addEventListener("click", function (e) {
-    var m = e.target.closest("[data-mode]");
-    if (m) {
-      if (m.dataset.mode === "local" && mode !== "local") {
-        publicDomain = $("f-domain").value;
-        $("f-domain").value = LOCAL_BASE;
-      } else if (m.dataset.mode === "public" && mode !== "public") {
-        $("f-domain").value = publicDomain;
-      }
-      mode = m.dataset.mode;
-      render();
-      return;
-    }
-
     var go = e.target.closest("[data-go]");
     if (go) { goto(Number(go.dataset.go)); return; }
-
-    var fill = e.target.closest("[data-fill]");
-    if (fill) {
-      var input = $(fill.dataset.fill);
-      input.type = "text";
-      input.value = genPassword();
-      render();
-      return;
-    }
 
     if (e.target.id === "btn-reveal") {
       revealed = !revealed;
@@ -1118,141 +670,20 @@
       render();
       return;
     }
-    if (e.target.id === "btn-copy-env") { copy($("out-env").dataset.raw || "", e.target); return; }
-    if (e.target.id === "btn-copy-run") { copy($("out-run").textContent, e.target); return; }
+    if (e.target.id === "btn-copy-run") { copy($("out-run").dataset.raw || "", e.target); return; }
     if (e.target.id === "btn-copy-verify") { copy($("out-verify").textContent, e.target); return; }
-  });
-
-  // FileReader works on a user-picked file under file:// too, which is why the
-  // picker is offered everywhere and the fetch below only where it can run.
-  $("f-envfile").addEventListener("change", function (e) {
-    var file = e.target.files && e.target.files[0];
-    if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function () {
-      var text = String(reader.result);
-      var env = parseEnv(text);
-      if (!env.BYTEM_DOMAIN && !env.DOMAIN_NAME && !env.MATRIX_SERVER_NAME) {
-        banner("exposed", "That file has no bytEM settings in it.",
-          "Expected a deployment <code>.env</code> containing BYTEM_DOMAIN or MATRIX_SERVER_NAME. Nothing was changed.");
-        return;
-      }
-      $("f-existing").value = text;
-      adopt(env);
-      render();
-      var kept = CARRYABLE.filter(function (k) { return !!env[k]; }).length;
-      banner("found", "Loaded " + file.name + ".",
-        "Adopted its settings and kept " + kept + " of " + CARRYABLE.length +
-        " infrastructure secrets. Change anything you want changed.");
-    };
-    reader.readAsText(file);
   });
 
   document.addEventListener("input", render);
 
-  // The address bar is the only thing a browser can tell us about where it is.
-  // Two useful readings, and one trap:
-  //
-  //   loopback  -> you are setting up on this machine, so open in Local mode,
-  //                which supplies its own name and needs no domain at all.
-  //   a real    -> that is the deployment's own domain; prefill it.
-  //   domain
-  //
-  // The trap is that RE_DOMAIN accepts 127.0.0.1 — every label is digits, which
-  // the pattern allows — so an unguarded prefill yields bytem.127.0.0.1. Reject
-  // anything that parses as an IPv4 address before it can be treated as a name.
-  var RE_IPV4 = /^\d{1,3}(\.\d{1,3}){3}$/;
-
+  // Served from the deployment's own name: prefill the domain from it.
+  // Skip loopback and IPv4 addresses, which RE_DOMAIN would otherwise accept.
   (function readLocation() {
     if (location.protocol === "file:") return;
-    var host = (location.hostname || "").toLowerCase();
-
-    if (host === "localhost" || host === "::1" || RE_IPV4.test(host)) {
-      if (host === "localhost" || host === "::1" || /^127\./.test(host)) mode = "local";
-      return;
-    }
-
-    host = host.replace(/^matrix\./, "").replace(/^bytem\./, "");
-    if (!RE_DOMAIN.test(host)) return;
+    var host = (location.hostname || "").toLowerCase().replace(/^(matrix|bytem)\./, "");
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host) || !RE_DOMAIN.test(host)) return;
     $("f-domain").value = host;
-    $("domain-hint").textContent = "Filled in from the address you are viewing this on. Change it if the instance answers on a different name.";
   })();
-  $("f-tpass").value = genPassword();
-  $("f-bpass").value = genPassword();
   render();
-
-  // An upgrade should not make you fetch your own file and paste it back. When
-  // this page is served from the deployment directory, .env is a sibling URL,
-  // so read it and adopt every value in it. The paste box below stays as the
-  // fallback for file://, where fetch has no origin to work from.
-  //
-  // Adopting the passwords too is not laziness: Synapse only ever applies a
-  // password when it creates the account, so on an existing instance the value
-  // in the old file IS the live credential. Generating a new one here would put
-  // a string in .env that no account actually has.
-  function adopt(env) {
-    var base = (env.BYTEM_DOMAIN || env.DOMAIN_NAME || "").replace(/^bytem\./, "");
-    if (base === "localhost") {
-      mode = "local";
-    } else if (RE_DOMAIN.test(base)) {
-      $("f-domain").value = base;
-    }
-
-    if (env.TEST_USERNAME || env.MATRIX_ADMIN_USERNAME) $("f-tuser").value = env.TEST_USERNAME || env.MATRIX_ADMIN_USERNAME;
-    if (env.TEST_PASSWORD || env.MATRIX_ADMIN_PASSWORD) $("f-tpass").value = env.TEST_PASSWORD || env.MATRIX_ADMIN_PASSWORD;
-    if (env.BOT_USERNAME) $("f-buser").value = env.BOT_USERNAME;
-    if (env.BOT_PASSWORD) $("f-bpass").value = env.BOT_PASSWORD;
-    if (env.SSL_EMAIL) $("f-email").value = env.SSL_EMAIL;
-    if (env.FEDERATION_MARKET_LIST_URL || env.MARKET_LIST) $("f-market").value = env.FEDERATION_MARKET_LIST_URL || env.MARKET_LIST;
-    if (env.FEDERATION_EXTRA_DOMAINS) $("f-extra").value = env.FEDERATION_EXTRA_DOMAINS;
-    if (env.FEDERATION_STRICT === "0" || env.FEDERATION_STRICT === "1") $("f-strict").value = env.FEDERATION_STRICT;
-  }
-
-  function banner(kind, title, body) {
-    var el = $("banner");
-    el.hidden = false;
-    el.className = "banner" + (kind === "exposed" ? " exposed" : "");
-    $("banner-title").textContent = title;
-    $("banner-body").innerHTML = body;
-  }
-
-  // Served: this page can read .env itself, so drop the paste step outright —
-  // whether or not a file turns out to be there. Opened off disk: keep it,
-  // because pasting is then the only route and losing the old secrets would
-  // break an existing instance.
-  if (mode === "local") $("f-domain").value = LOCAL_BASE;
-
-  if (location.protocol !== "file:") {
-    fetch(".env", { cache: "no-store" }).then(function (r) {
-      return r.ok ? r.text() : null;
-    }).then(function (text) {
-      if (!text) return;
-      var env = parseEnv(text);
-      if (!env.BYTEM_DOMAIN && !env.DOMAIN_NAME && !env.MATRIX_SERVER_NAME) return;
-
-      $("f-existing").value = text;
-      adopt(env);
-      render();
-
-      var kept = CARRYABLE.filter(function (k) { return !!env[k]; }).length;
-      banner("found", "Upgrading an existing instance.",
-        "Read <code>.env</code> from this directory and adopted its settings, keeping " + kept +
-        " of " + CARRYABLE.length + " infrastructure secrets. Change anything you want changed; " +
-        "everything else stays as it is.");
-
-      // Serving the deployment directory is what made that read possible, and
-      // it does not distinguish between this page and anyone else on the
-      // network asking for the same URL.
-      if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost" && location.hostname !== "::1") {
-        banner("exposed", "Your .env is being served over the network.",
-          "Anything that can reach <code>" + location.host + "</code> can fetch <code>/.env</code> and read every " +
-          "credential in it. Stop the web server when you are done here, and treat these secrets as compromised " +
-          "if the machine was reachable by anyone else.");
-      }
-    }).catch(function () {
-      // No .env, no server, or a directory listing instead — all fine. The
-      // paste box on step 4 covers every one of those.
-    });
-  }
 })();
 </script>
