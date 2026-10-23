@@ -129,6 +129,9 @@ keep DOMAIN_REPO_TOKEN ""
 keep SIGIL_PRIVATE_KEY "$(random_hex 32)"
 [[ "$SIGIL_PRIVATE_KEY" =~ ^[0-9a-fA-F]{64}$ ]] || fail "SIGIL_PRIVATE_KEY must be 64 hex characters (a 32-byte Ed25519 seed)"
 keep STRIPE_SECRET_KEY ""
+keep DATENSERVICEPLUS_CLIENT_ID ""
+keep DATENSERVICEPLUS_CLIENT_SECRET ""
+keep DATENSERVICEPLUS_API_KEY ""
 
 TEMPLATE=.env.template
 OUTPUT=.env
@@ -172,6 +175,9 @@ while IFS= read -r line || [ -n "$line" ]; do
   line=${line//@DOMAIN_REPO_TOKEN@/$DOMAIN_REPO_TOKEN}
   line=${line//@SIGIL_PRIVATE_KEY@/$SIGIL_PRIVATE_KEY}
   line=${line//@STRIPE_SECRET_KEY@/$STRIPE_SECRET_KEY}
+  line=${line//@DATENSERVICEPLUS_CLIENT_ID@/$DATENSERVICEPLUS_CLIENT_ID}
+  line=${line//@DATENSERVICEPLUS_CLIENT_SECRET@/$DATENSERVICEPLUS_CLIENT_SECRET}
+  line=${line//@DATENSERVICEPLUS_API_KEY@/$DATENSERVICEPLUS_API_KEY}
   line=${line//@TRAFFIC_REPORT_SECRET@/$TRAFFIC_REPORT_SECRET}
   printf '%s\n' "$line" >> "$tmp"
 done < "$TEMPLATE"

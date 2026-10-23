@@ -18,6 +18,8 @@ services:
       - ./certbot/www:/var/www/certbot:ro
       # Public-site access log (IP-truncated), read by scripts/retrieve-access-logs-traffic-report.sh
       - ./logs/nginx:/var/log/bytem
+      # Governance domains this market serves (the last server block of nginx/default.conf).
+      - ./domain_files:/var/www/domain_files:ro
     networks:
       default:
         # Server-side Matrix calls must keep the public hostname: it is part of
@@ -66,6 +68,10 @@ services:
       - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@bytem-rabbitmq:5672/${RABBITMQ_DEFAULT_VHOST}
       - SOLR_URL=http://bytem-solr:8983
       - API_HOST_INTERNAL=http://bytem-be:${EXCHANGE_PORT}
+    volumes:
+      # Domain files: written through /api/deid/domain, read in place of
+      # fetching this market's own domains over HTTPS (shared/deidDocument.js).
+      - ./domain_files:/app/domain_files
     logging:
       driver: "json-file"
       options:
@@ -104,6 +110,8 @@ services:
       - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@bytem-rabbitmq:5672/${RABBITMQ_DEFAULT_VHOST}
       - SOLR_URL=http://bytem-solr:8983
       - API_HOST_INTERNAL=http://bytem-be:${EXCHANGE_PORT}
+    volumes:
+      - ./domain_files:/app/domain_files:ro
     logging:
       driver: "json-file"
       options:
@@ -135,11 +143,6 @@ services:
       # public API_HOST is not reachable from inside the container (hairpin NAT).
       # Hardcoded to the docker service name (same as be/bot); .env does not carry it.
       - API_HOST_INTERNAL=http://bytem-be:${EXCHANGE_PORT}
-      # Example DEID that this market's /llms.txt names (pwa/app/llms.txt/route.ts).
-      # It also fed the /demand featured-product hero, removed 2026-09-05; see the
-      # note in pwa/app/demand/page.tsx. After changing it, recreate the container:
-      # sudo docker compose up -d --build --force-recreate bytem-pwa
-      - NEXT_PUBLIC_DEMAND_PRODUCT_DEID=${NEXT_PUBLIC_DEMAND_PRODUCT_DEID}
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:${PWA_PORT}/offline"]
       interval: 10s
