@@ -27,7 +27,7 @@ fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 info() { printf '%s\n' "$*"; }
 
 DEPLOYMENT_DOMAIN=${DEPLOYMENT_DOMAIN:-}
-ADMIN_INPUT=${MATRIX_ADMIN_USERNAME:-}
+ADMIN_INPUT=${ADMIN_USERNAME:-}
 NON_INTERACTIVE=false
 FORCE=false
 
@@ -72,7 +72,7 @@ DEFAULT_DEID_DOMAIN=${DEFAULT_DEID_DOMAIN:-${DEPLOYMENT_DOMAIN#*.}}
 if [ -z "$ADMIN_INPUT" ] && ! $NON_INTERACTIVE; then
   read -r -p "Matrix administrator (localpart or full MXID): " ADMIN_INPUT
 fi
-[ -n "$ADMIN_INPUT" ] || fail "set --admin-user or MATRIX_ADMIN_USERNAME"
+[ -n "$ADMIN_INPUT" ] || fail "set --admin-user or ADMIN_USERNAME"
 
 if [[ "$ADMIN_INPUT" == @*:* ]]; then
   ADMIN_DOMAIN=${ADMIN_INPUT#*:}
@@ -111,7 +111,9 @@ keep() {
 }
 
 keep BOT_PASSWORD "$(random_hex 16)"
-keep MATRIX_ADMIN_PASSWORD "$(random_hex 12)"
+# A .env from before the rename holds the registered admin's password as MATRIX_ADMIN_PASSWORD.
+keep ADMIN_PASSWORD "$(existing MATRIX_ADMIN_PASSWORD)"
+keep ADMIN_PASSWORD "$(random_hex 12)"
 keep RABBITMQ_DEFAULT_USER bytem
 keep RABBITMQ_DEFAULT_PASS "$(random_hex 24)"
 keep POSTGRES_PASSWORD "$(random_hex 24)"
@@ -119,7 +121,7 @@ keep SYNAPSE_MACAROON_SECRET_KEY "$(random_hex 32)"
 keep JWT_SECRET "$(random_hex 32)"
 keep TRAFFIC_REPORT_SECRET "$(random_hex 16)"
 # .env is read by `source` (install.sh) and by compose: no quotes, spaces, $ or backslashes.
-for name in BOT_PASSWORD MATRIX_ADMIN_PASSWORD; do
+for name in BOT_PASSWORD ADMIN_PASSWORD; do
   [[ "${!name}" =~ ^[A-Za-z0-9._~@%+=,:#!-]+$ ]] || fail "$name may only contain letters, digits and . _ ~ @ % + = , : # ! -"
 done
 MARKET_LIST=${MARKET_LIST:-https://bytem.app/markets/bytem-market-list.json}
@@ -162,7 +164,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   line=${line//@DEFAULT_DEID_DOMAIN@/$DEFAULT_DEID_DOMAIN}
   line=${line//@ADMIN_LOCALPART@/$ADMIN_LOCALPART}
   line=${line//@ADMIN_MXID@/$ADMIN_MXID}
-  line=${line//@MATRIX_ADMIN_PASSWORD@/$MATRIX_ADMIN_PASSWORD}
+  line=${line//@ADMIN_PASSWORD@/$ADMIN_PASSWORD}
   line=${line//@BOT_PASSWORD@/$BOT_PASSWORD}
   line=${line//@RABBITMQ_DEFAULT_USER@/$RABBITMQ_DEFAULT_USER}
   line=${line//@RABBITMQ_DEFAULT_PASS@/$RABBITMQ_DEFAULT_PASS}
@@ -194,6 +196,6 @@ info "  identity: $DEPLOYMENT_DOMAIN"
 info "  product:  https://$PRODUCT_DOMAIN"
 info "  Matrix:   https://$MATRIX_DOMAIN"
 info "  admin:    $ADMIN_MXID"
-info "Secrets are in .env and were not printed; the administrator password is MATRIX_ADMIN_PASSWORD there. Keep that file private."
+info "Secrets are in .env and were not printed; the administrator password is ADMIN_PASSWORD there. Keep that file private."
 [ -n "$DOMAIN_REPO_TOKEN" ] || info "DOMAIN_REPO_TOKEN is empty: DEID writes will answer 503 until it is set in .env."
 [ -n "$STRIPE_SECRET_KEY" ] || info "STRIPE_SECRET_KEY is empty: priced products will answer 503 until it is set in .env."

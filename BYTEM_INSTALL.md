@@ -189,7 +189,7 @@ The `env_setup.sh` script remains the supported command-line and headless instal
 
 ## Administrator
 
-The administrator is the account a person uses to sign in. `--admin-user` sets its name. Its password is `MATRIX_ADMIN_PASSWORD` in `.env`: generated unless you pass one in the environment of `env_setup.sh`.
+The administrator is the account a person uses to sign in. `--admin-user` sets its name. Its password is `ADMIN_PASSWORD` in `.env`: generated unless you pass one in the environment of `env_setup.sh`.
 
 ## Bot
 
@@ -312,13 +312,13 @@ set +a
 Check the backend:
 
 ```bash
-curl -fsS "https://${DOMAIN_NAME}/api/auth/health"
+curl -fsS "https://${BYTEM_DOMAIN}/api/auth/health"
 ```
 
 Check the Matrix server:
 
 ```bash
-curl -fsS "https://${MATRIX_SERVER_NAME}/_matrix/client/versions"
+curl -fsS "https://${MATRIX_HOMESERVER}/_matrix/client/versions"
 ```
 
 Run the end-to-end workflow test:
@@ -360,7 +360,7 @@ goaccess logs/nginx/access.log --log-format='%h - %^ [%d:%t %^] "%r" %s %b "%R" 
   --date-format=%d/%b/%Y --time-format=%T -o logs/nginx/traffic-report.html
 ```
 
-Share it as `https://${DOMAIN_NAME}/traffic-report.html?secret=${TRAFFIC_REPORT_SECRET}`. Change `TRAFFIC_REPORT_SECRET` in `.env` and restart `bytem-nginx` to revoke every shared link.
+Share it as `https://${BYTEM_DOMAIN}/traffic-report.html?secret=${TRAFFIC_REPORT_SECRET}`. Change `TRAFFIC_REPORT_SECRET` in `.env` and restart `bytem-nginx` to revoke every shared link.
 
 ---
 
@@ -373,7 +373,7 @@ Share it as `https://${DOMAIN_NAME}/traffic-report.html?secret=${TRAFFIC_REPORT_
 | nginx repeatedly restarts         | Verify both certificate paths exist under `certbot/conf/live/`; run `./certbot.sh`                                                   |
 | Let's Encrypt validation fails    | Verify both DNS names point to this server, port `80` is open, and no unrelated process occupies the port                            |
 | bot/backend exits after startup   | Verify `BOT_USERNAME` and `BOT_PASSWORD` match the separate bot account                                                              |
-| admin login fails                 | Use `MATRIX_ADMIN_USERNAME` and `MATRIX_ADMIN_PASSWORD` from `.env`, not the bot credentials                                         |
+| admin login fails                 | Use `ADMIN_USERNAME` and `ADMIN_PASSWORD` from `.env`, not the bot credentials                                         |
 | Synapse cannot start              | Run `docker compose logs bytem-synapse bytem-synapse-db` and verify stable secrets in `.env`                                         |
 | cross-instance exchange fails     | Run `./whitelist-sync.sh` and check market-list reachability                                                                         |
 | old `/pwa/...` bookmark           | nginx redirects it to the equivalent root PWA route                                                                                  |

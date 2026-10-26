@@ -23,11 +23,11 @@ set -a
 source .env
 set +a
 
-required=(DOMAIN_NAME MATRIX_SERVER_NAME MATRIX_ADMIN_USERNAME MATRIX_ADMIN_PASSWORD BOT_USERNAME BOT_PASSWORD POSTGRES_PASSWORD JWT_SECRET)
+required=(BYTEM_DOMAIN MATRIX_HOMESERVER ADMIN_USERNAME ADMIN_PASSWORD BOT_USERNAME BOT_PASSWORD POSTGRES_PASSWORD JWT_SECRET)
 for variable_name in "${required[@]}"; do
   [ -n "${!variable_name:-}" ] || die "$variable_name is missing from .env. Re-run ./env_setup.sh."
 done
-[ "$MATRIX_ADMIN_USERNAME" != "$BOT_USERNAME" ] || \
+[ "$ADMIN_USERNAME" != "$BOT_USERNAME" ] || \
   die "The administrator and bot usernames are the same. Re-run ./env_setup.sh --force with a different --admin-user."
 
 [ -n "${SIGIL_PRIVATE_KEY:-}" ] || \
@@ -57,8 +57,8 @@ if [ -d "$legacy_synapse_data" ] && [ -n "$(find "$legacy_synapse_data" -mindept
   fi
 fi
 
-if [ ! -f "certbot/conf/live/${DOMAIN_NAME}/fullchain.pem" ] || \
-   [ ! -f "certbot/conf/live/${MATRIX_SERVER_NAME}/fullchain.pem" ]; then
+if [ ! -f "certbot/conf/live/${BYTEM_DOMAIN}/fullchain.pem" ] || \
+   [ ! -f "certbot/conf/live/${MATRIX_HOMESERVER}/fullchain.pem" ]; then
   warn "TLS certificates are missing; starting certificate setup."
   "$SCRIPT_DIR/certbot.sh"
 fi
@@ -92,9 +92,9 @@ else
   echo -e "${GREEN}bytEM is running.${NC}"
 fi
 
-echo "  Application: https://${DOMAIN_NAME}"
-echo "  Matrix:      https://${MATRIX_SERVER_NAME}"
-echo "  Admin user:  @${MATRIX_ADMIN_USERNAME}:${MATRIX_SERVER_NAME} (password: MATRIX_ADMIN_PASSWORD in .env)"
-echo "  Bot user:    @${BOT_USERNAME}:${MATRIX_SERVER_NAME}"
+echo "  Application: https://${BYTEM_DOMAIN}"
+echo "  Matrix:      https://${MATRIX_HOMESERVER}"
+echo "  Admin user:  @${ADMIN_USERNAME}:${MATRIX_HOMESERVER} (password: ADMIN_PASSWORD in .env)"
+echo "  Bot user:    @${BOT_USERNAME}:${MATRIX_HOMESERVER}"
 echo
 warn "The bot access token is acquired inside the services; .env is not rewritten."

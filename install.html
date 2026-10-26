@@ -394,7 +394,7 @@
         <div class="field">
           <label for="f-pass">Administrator password <span>— optional</span></label>
           <input type="password" id="f-pass" autocomplete="new-password">
-          <p class="hint">Empty: <code>env_setup.sh</code> generates one and writes it to <code>.env</code> as <code>MATRIX_ADMIN_PASSWORD</code>.</p>
+          <p class="hint">Empty: <code>env_setup.sh</code> generates one and writes it to <code>.env</code> as <code>ADMIN_PASSWORD</code>.</p>
           <span class="err" id="e-pass" hidden></span>
         </div>
 
@@ -561,7 +561,7 @@
 
   function command(s, masked) {
     var vars = [
-      ["MATRIX_ADMIN_PASSWORD", s.pass, true],
+      ["ADMIN_PASSWORD", s.pass, true],
       ["SSL_EMAIL", s.email, false],
       ["DOMAIN_REPO_TOKEN", s.token, true],
       ["STRIPE_SECRET_KEY", s.stripe, true],

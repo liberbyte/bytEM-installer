@@ -23,19 +23,19 @@ chmod +x env_setup.sh certbot.sh install.sh whitelist-sync.sh scripts/*.sh
 For `de.example.org` the application is `https://bytem.de.example.org` and
 Matrix is `https://matrix.de.example.org`. Passwords, database and queue
 credentials, signing keys and the traffic-report secret are generated into
-`.env`; the administrator password is `MATRIX_ADMIN_PASSWORD` there. The bot
+`.env`; the administrator password is `ADMIN_PASSWORD` there. The bot
 account is `bot`; the services log in with it themselves.
 
 Optional values are read from the environment of the same command:
 
 ```bash
- MATRIX_ADMIN_PASSWORD='choose-one' DOMAIN_REPO_TOKEN='...' STRIPE_SECRET_KEY='sk_test_...' \
+ ADMIN_PASSWORD='choose-one' DOMAIN_REPO_TOKEN='...' STRIPE_SECRET_KEY='sk_test_...' \
   ./env_setup.sh --domain de.example.org --admin-user admin --non-interactive
 ```
 
 | Variable | Without it |
 |---|---|
-| `MATRIX_ADMIN_PASSWORD` | generated |
+| `ADMIN_PASSWORD` | generated |
 | `SSL_EMAIL` | `admin@<domain>` |
 | `DOMAIN_REPO_TOKEN` | DEIDs are read-only; DEID writes answer 503 |
 | `STRIPE_SECRET_KEY` | priced products answer 503 |
