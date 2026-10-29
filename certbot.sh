@@ -24,9 +24,17 @@ set +a
 
 mkdir -p certbot/conf certbot/www
 
+# The two bytEM names, then every governance domain served from
+# domain_files/<domain>/. nginx serves a governance domain only once its
+# certificate exists, so a failure there is reported and does not stop the rest.
+domains=("$BYTEM_DOMAIN" "$MATRIX_HOMESERVER")
+for folder in domain_files/*/; do
+  [ -d "$folder" ] && domains+=("$(basename "$folder")")
+done
+
 if [ "${1:-}" = "--self-signed" ]; then
   command -v openssl >/dev/null 2>&1 || die "openssl is required for self-signed certificates."
-  for domain in "$BYTEM_DOMAIN" "$MATRIX_HOMESERVER"; do
+  for domain in "${domains[@]}"; do
     mkdir -p "certbot/conf/live/${domain}"
     openssl req -x509 -nodes -days 30 -newkey rsa:2048 \
       -keyout "certbot/conf/live/${domain}/privkey.pem" \
@@ -37,17 +45,20 @@ if [ "${1:-}" = "--self-signed" ]; then
 else
   command -v docker >/dev/null 2>&1 || die "Docker is not installed."
 
-  if [ -f "certbot/conf/live/${BYTEM_DOMAIN}/fullchain.pem" ] && \
-     [ -f "certbot/conf/live/${MATRIX_HOMESERVER}/fullchain.pem" ]; then
+  missing=()
+  for domain in "${domains[@]}"; do
+    [ -f "certbot/conf/live/${domain}/fullchain.pem" ] || missing+=("$domain")
+  done
+
+  if [ "${#missing[@]}" -eq 0 ]; then
     echo "Renewing existing Let's Encrypt certificates through the nginx webroot..."
     docker run --rm \
       -v "$SCRIPT_DIR/certbot/conf:/etc/letsencrypt" \
       -v "$SCRIPT_DIR/certbot/www:/var/www/certbot" \
       certbot/certbot renew --webroot --webroot-path /var/www/certbot
   else
-    warn "Both DNS names must point to this host and inbound port 80 must be open:"
-    echo "  $BYTEM_DOMAIN"
-    echo "  $MATRIX_HOMESERVER"
+    warn "These DNS names must point to this host and inbound port 80 must be open:"
+    printf '  %s\n' "${missing[@]}"
     echo
 
     docker compose stop bytem-nginx >/dev/null 2>&1 || true
@@ -56,19 +67,21 @@ else
     if docker ps --format '{{.Names}}' | grep -qx bytem-app; then
       docker stop bytem-app >/dev/null
     fi
-    for domain in "$BYTEM_DOMAIN" "$MATRIX_HOMESERVER"; do
+    for domain in "${missing[@]}"; do
       echo "Requesting a certificate for ${domain}..."
-      docker run --rm \
-        -p 80:80 \
-        -v "$SCRIPT_DIR/certbot/conf:/etc/letsencrypt" \
-        certbot/certbot certonly \
-        --standalone \
-        --cert-name "$domain" \
-        --email "$SSL_EMAIL" \
-        --agree-tos \
-        --no-eff-email \
-        --non-interactive \
-        -d "$domain"
+      if ! docker run --rm \
+          -p 80:80 \
+          -v "$SCRIPT_DIR/certbot/conf:/etc/letsencrypt" \
+          certbot/certbot certonly \
+          --standalone \
+          --cert-name "$domain" \
+          --email "$SSL_EMAIL" \
+          --agree-tos \
+          --no-eff-email \
+          --non-interactive \
+          -d "$domain"; then
+        warn "No certificate for ${domain}."
+      fi
     done
   fi
 fi
@@ -78,8 +91,10 @@ for domain in "$BYTEM_DOMAIN" "$MATRIX_HOMESERVER"; do
   [ -f "certbot/conf/live/${domain}/privkey.pem" ] || die "Private key missing for $domain."
 done
 
-if docker compose ps --status running --services 2>/dev/null | grep -qx bytem-nginx; then
+# nginx adds a governance domain's server block at start, so a restart picks up
+# new certificates; it also starts an edge stopped above for issuance.
+if docker compose ps --all --services 2>/dev/null | grep -qx bytem-nginx; then
   docker compose restart bytem-nginx
 fi
 
-echo -e "${GREEN}TLS certificates are ready for both bytEM domains.${NC}"
+echo -e "${GREEN}TLS certificates are ready for ${domains[*]}.${NC}"

@@ -101,7 +101,31 @@ Both names must resolve to the Docker host before certificate issuance.
 
 # Fresh Installation
 
-## 1. Clone the repository
+## From your computer
+
+Download `install.html` from this repository and open it in a browser; it makes no network calls. Fill in:
+
+* the server address (IP or host name; empty means `bytem.<deployment domain>`) and the SSH user,
+* the deployment domain, the administrator and the optional credentials.
+
+The last step prints one command. Paste it into Windows PowerShell or a Linux terminal:
+
+```text
+ssh -t ubuntu@bytem.de.example.org "curl -fsSL https://raw.githubusercontent.com/liberbyte/bytEM-installer/main/remote_install.sh -o ~/.bytem-remote-install.sh && bash ~/.bytem-remote-install.sh RE9NQUlO…"
+```
+
+`ssh -t` gives the server a terminal, so SSH asks for the password when no key is set up and sudo asks for its own when something has to be installed. The last word is the wizard's values, base64-encoded. On the server, `remote_install.sh`:
+
+1. Installs git, Docker Engine (from `get.docker.com`) and the Compose plugin when missing, and adds the SSH user to the `docker` group.
+2. Finds an existing bytEM: the folder the running `bytem-nginx` container was started from, else `~/bytEM`. Without either, it stops when ports 80, 443 or 8448 are taken, and otherwise clones this repository into `~/bytEM`.
+3. Stops when that folder's `.env` names another deployment domain.
+4. In an installer folder: `git pull`, `env_setup.sh` only when `.env` is missing, then `install.sh` (with `--force-recreate` when ticked in the wizard).
+5. In a checkout of the bytEM source (its `docker-compose.yaml` builds images): `git pull`, `git submodule update --init --recursive` and `docker compose up -d --build --force-recreate`.
+6. Prints the folder, the administrator password and an `scp` command that copies `.env` to your computer.
+
+Volumes, `.env` and certificates are kept in every case. The same command upgrades a server later.
+
+## On the server
 
 ```bash
 git clone https://github.com/liberbyte/bytEM-installer.git
@@ -109,40 +133,7 @@ cd bytEM-installer
 chmod +x env_setup.sh certbot.sh install.sh whitelist-sync.sh scripts/*.sh
 ```
 
-## 2. Configure bytEM using the GUI wizard
-
-The easiest way to configure a new bytEM installation is to use the graphical installation wizard:
-
-```text
-install.html
-```
-
-### Serve the wizard locally
-
-Serve the repository directory locally:
-
-```bash
-python3 -m http.server 8080 --bind 127.0.0.1
-```
-
-Then open the installation wizard in your browser:
-
-```text
-http://127.0.0.1:8080/install.html
-```
-
-> [!NOTE]
-> Serving `install.html` through a local HTTP server is the recommended method.
-
-Alternatively, if direct file access is supported in your environment, on Linux you can open it with:
-
-```bash
-xdg-open install.html
-```
-
-The wizard asks for the deployment domain, the administrator and the optional external credentials, and prints the `env_setup.sh` command to run on the server. Run that command; it writes `.env`. Then continue with the installation.
-
-## 3. Run the installer
+`install.html` also prints the `env_setup.sh` command for this case. Run it; it writes `.env`. Then run the installer.
 
 If Docker is configured for your user:
 
@@ -160,9 +151,9 @@ The installer:
 
 1. Validates the configuration.
 2. Pulls the published Docker images.
-3. Obtains missing TLS certificates.
+3. Obtains missing TLS certificates, for the two bytEM names and every governance domain in `domain_files/<domain>/`.
 4. Migrates legacy Synapse `/data`, when present.
-5. Starts the Docker stack.
+5. Starts the Docker stack (`./install.sh --force-recreate` recreates every container).
 6. Waits for the required health checks.
 
 ---
@@ -213,7 +204,7 @@ Every other secret (PostgreSQL, RabbitMQ, Synapse macaroon, JWT, SIGIL signing k
 
 # TLS
 
-`install.sh` calls `certbot.sh` automatically when either certificate is missing.
+`install.sh` calls `certbot.sh` automatically when a certificate is missing: for `BYTEM_DOMAIN`, `MATRIX_HOMESERVER` or a governance domain in `domain_files/<domain>/`. nginx serves a governance domain once its certificate exists.
 
 For certificate renewal:
 
@@ -389,19 +380,13 @@ Share it as `https://${BYTEM_DOMAIN}/traffic-report.html?secret=${TRAFFIC_REPORT
 # Recommended Installation Flow
 
 ```text
-Clone repository
+Open install.html on your computer
         ↓
-Start local web server
+Complete the wizard
         ↓
-Open install.html
-        ↓
-Complete GUI wizard
-        ↓
-Run the printed ./env_setup.sh command
-        ↓
-Run ./install.sh
+Paste the printed ssh command into PowerShell or a terminal
         ↓
 Verify installation
 ```
 
-The GUI wizard is the recommended installation method for users with browser access. `env_setup.sh` remains available for command-line and headless installations.
+`env_setup.sh` and `install.sh` on the server remain available for command-line and headless installations.

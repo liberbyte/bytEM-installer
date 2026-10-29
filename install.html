@@ -220,6 +220,8 @@
     border-radius: var(--radius);
     padding: 9px 11px;
   }
+  .check { display: flex; gap: 10px; align-items: baseline; font-size: 14px; cursor: pointer; }
+  .check input { accent-color: var(--accent); }
   input:focus-visible, button:focus-visible, a:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
@@ -271,6 +273,8 @@
     margin: 0 0 24px;
     max-width: 62ch;
   }
+  ul.note { padding-left: 32px; }
+  ul.note li + li { margin-top: 4px; }
   .note.warn { border-left-color: var(--warn); }
   .note.warn strong { color: var(--warn); }
   .note code, p code, li code, dd code { font-family: var(--mono); font-size: 0.9em; }
@@ -351,7 +355,7 @@
   <header class="masthead">
     <div>
       <h1>bytEM Deployment Wizard</h1>
-      <p class="tagline">Composes the <code>env_setup.sh</code> and <code>install.sh</code> commands for a public bytEM instance. <code>env_setup.sh</code> writes <code>.env</code> on the server.</p>
+      <p class="tagline">Composes one command that installs or upgrades bytEM on a server over SSH, from Windows PowerShell or a Linux terminal. On the server it writes <code>.env</code> and starts the stack.</p>
     </div>
     <span class="offline-chip">runs entirely in this tab · no network calls</span>
   </header>
@@ -376,6 +380,20 @@
       <section class="panel active" data-panel="0">
         <h2>Where this instance lives</h2>
         <p class="intro">The application and Matrix names are derived from the deployment domain. The Matrix name is part of every user ID and room alias on this server and cannot change after the first start.</p>
+
+        <div class="field">
+          <label for="f-host">Server address <span>— optional</span></label>
+          <input type="text" id="f-host" spellcheck="false" autocomplete="off">
+          <p class="hint">IP address or host name the server answers SSH on. Empty: <code>bytem.</code> under the deployment domain.</p>
+          <span class="err" id="e-host" hidden></span>
+        </div>
+
+        <div class="field">
+          <label for="f-sshuser">SSH user</label>
+          <input type="text" id="f-sshuser" placeholder="ubuntu" spellcheck="false" autocomplete="off">
+          <p class="hint">bytEM goes into this user's home folder, <code>~/bytEM</code>. SSH asks for the password when no key is set up; installing Docker asks for the sudo password.</p>
+          <span class="err" id="e-sshuser" hidden></span>
+        </div>
 
         <div class="field">
           <label for="f-domain">Deployment domain</label>
@@ -443,9 +461,20 @@
       <!-- STEP 3 -->
       <section class="panel" data-panel="2">
         <h2>Upgrading an existing instance</h2>
-        <p class="intro">On a server that already runs bytEM, keep <code>.env</code> and run <code>./install.sh</code>. It pulls the new images and restarts the stack.</p>
+        <p class="intro">The same command upgrades a server that already runs bytEM. It finds the folder the running stack was started from, else <code>~/bytEM</code>, and keeps its <code>.env</code>, certificates and volumes.</p>
 
-        <p class="note">Re-run <code>env_setup.sh</code> only to change the domain or administrator. It keeps every secret already in <code>.env</code>, backs the old file up, and needs <code>--force</code> when <code>.env</code> exists.</p>
+        <ul class="note">
+          <li>An installer folder is updated with <code>git pull</code>, and <code>install.sh</code> pulls the published images.</li>
+          <li>A checkout of the bytEM source is updated with <code>git pull</code> and its submodules, then rebuilt with <code>docker compose up -d --build --force-recreate</code>.</li>
+          <li>A folder whose <code>.env</code> names another deployment domain is left alone, and the command stops.</li>
+        </ul>
+
+        <div class="field">
+          <label class="check"><input type="checkbox" id="f-recreate"> Recreate every container, also unchanged ones</label>
+          <p class="hint">For an installer folder. Volumes are kept.</p>
+        </div>
+
+        <p class="note">On the server, <code>env_setup.sh --force</code> changes the domain or administrator of an installer folder. It keeps every secret already in <code>.env</code> and backs the old file up.</p>
 
         <div class="actions">
           <button type="button" class="act ghost" data-go="1">Back</button>
@@ -463,10 +492,19 @@
         </div>
 
         <div id="output-body">
-          <p class="intro">Run these on the Docker host, from the root of your <code>bytEM-public</code> clone.</p>
+          <div class="step-cmd" id="remote-block">
+            <h4><span class="n">01</span> Install from your computer</h4>
+            <p>Copy it, paste it into Windows PowerShell or a Linux terminal and press Enter. It fetches <code>remote_install.sh</code> from the installer repository and runs it on the server: Docker and git when missing, then the install or upgrade. The wizard's values travel base64-encoded in the last word.</p>
+            <div class="out-head">
+              <h3>PowerShell or terminal</h3>
+              <div class="out-tools"><button type="button" class="tiny" id="btn-copy-remote">Copy install command</button></div>
+            </div>
+            <pre class="out" id="out-remote">—</pre>
+          </div>
+          <p class="note" id="remote-missing" hidden>Enter the SSH user in step 01 for the command that installs from your computer.</p>
 
           <div class="step-cmd">
-            <h4><span class="n">01</span> Write .env and start the stack</h4>
+            <h4><span class="n">02</span> Or on the server, in an installer clone</h4>
             <p>The line starts with a space, which keeps it out of shell history when <code>HISTCONTROL</code> includes <code>ignorespace</code> (the default on Ubuntu). <code>install.sh</code> pulls the published images, obtains certificates for both names and waits on health checks.</p>
             <div class="out-head">
               <h3>terminal</h3>
@@ -479,7 +517,7 @@
           </div>
 
           <div class="step-cmd">
-            <h4><span class="n">02</span> Verify</h4>
+            <h4><span class="n">03</span> Verify</h4>
             <p>Both endpoints should answer before you hand the instance to anyone.</p>
             <div class="out-head">
               <h3>terminal</h3>
@@ -517,6 +555,9 @@
   var RE_ENVVAL = /^[A-Za-z0-9._:/@%+=,-]+$/;
   // The password rule env_setup.sh enforces.
   var RE_PASSWORD = /^[A-Za-z0-9._~@%+=,:#!-]+$/;
+  var RE_SSHUSER = /^[A-Za-z_][A-Za-z0-9_.-]*$/;
+  var RE_IP = /^[0-9a-fA-F:.]+$/;
+  var REMOTE_SCRIPT = "https://raw.githubusercontent.com/liberbyte/bytEM-installer/main/remote_install.sh";
 
   var $ = function (id) { return document.getElementById(id); };
   var revealed = false;
@@ -524,6 +565,9 @@
   function state() {
     var domain = $("f-domain").value.trim().toLowerCase().replace(/\.$/, "");
     return {
+      host: $("f-host").value.trim().toLowerCase() || (domain ? "bytem." + domain : ""),
+      sshuser: $("f-sshuser").value.trim(),
+      recreate: $("f-recreate").checked,
       domain: domain,
       app: domain ? "bytem." + domain : "",
       matrix: domain ? "matrix." + domain : "",
@@ -545,6 +589,9 @@
       if (v && !RE_ENVVAL.test(v)) add(step, field, "Allowed: letters, digits and . _ : / @ % + = , -");
     }
 
+    var host = $("f-host").value.trim();
+    if (host && !RE_DOMAIN.test(host.toLowerCase()) && !RE_IP.test(host)) add(0, "host", "Not a host name or IP address: " + host);
+    if (s.sshuser && !RE_SSHUSER.test(s.sshuser)) add(0, "sshuser", "Not a Linux user name: " + s.sshuser);
     if (!s.domain) add(0, "domain", "A deployment domain is required.");
     else if (!RE_DOMAIN.test(s.domain)) add(0, "domain", "Not a valid domain name: " + s.domain);
     if (!s.admin) add(0, "admin", "An administrator username is required.");
@@ -575,6 +622,25 @@
     return " " + parts.join(" ") + "\n./install.sh";
   }
 
+  // Values are base64 so the line quotes the same in PowerShell and bash;
+  // every value is ASCII from the patterns above.
+  function remoteCommand(s) {
+    var lines = [
+      ["DOMAIN", s.domain],
+      ["ADMIN_USER", s.admin],
+      ["SSH_HOST", s.host],
+      ["FORCE_RECREATE", s.recreate ? "1" : ""],
+      ["ADMIN_PASSWORD", s.pass],
+      ["SSL_EMAIL", s.email],
+      ["DOMAIN_REPO_TOKEN", s.token],
+      ["STRIPE_SECRET_KEY", s.stripe],
+      ["SIGIL_PRIVATE_KEY", s.sigil]
+    ].filter(function (v) { return v[1]; }).map(function (v) { return v[0] + "=" + v[1]; });
+    return "ssh -t " + s.sshuser + "@" + s.host +
+      ' "curl -fsSL ' + REMOTE_SCRIPT + " -o ~/.bytem-remote-install.sh && bash ~/.bytem-remote-install.sh " +
+      btoa(lines.join("\n")) + '"';
+  }
+
   function render() {
     var s = state();
     var probs = problems(s);
@@ -588,8 +654,9 @@
     setD("d-matrix", s.matrix ? "https://" + s.matrix : "");
     setD("d-admin", s.admin && s.matrix ? "@" + s.admin + ":" + s.matrix : "");
     $("f-email").placeholder = s.domain ? "admin@" + s.domain : "admin@ your domain";
+    $("f-host").placeholder = s.domain ? "bytem." + s.domain : "203.0.113.10 or bytem.de.cities.app";
 
-    ["domain", "admin", "pass", "email", "token", "stripe", "sigil"].forEach(function (f) {
+    ["host", "sshuser", "domain", "admin", "pass", "email", "token", "stripe", "sigil"].forEach(function (f) {
       var hit = probs.filter(function (p) { return p.field === f; })[0];
       var box = $("e-" + f);
       box.hidden = !hit;
@@ -622,6 +689,9 @@
       });
       return;
     }
+    $("remote-block").hidden = !s.sshuser;
+    $("remote-missing").hidden = !!s.sshuser;
+    if (s.sshuser) $("out-remote").textContent = remoteCommand(s);
     $("out-run").textContent = command(s, !revealed);
     $("out-run").dataset.raw = command(s, false);
     $("out-verify").textContent =
@@ -671,6 +741,7 @@
       return;
     }
     if (e.target.id === "btn-copy-run") { copy($("out-run").dataset.raw || "", e.target); return; }
+    if (e.target.id === "btn-copy-remote") { copy($("out-remote").textContent, e.target); return; }
     if (e.target.id === "btn-copy-verify") { copy($("out-verify").textContent, e.target); return; }
   });
 

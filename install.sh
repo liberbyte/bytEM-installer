@@ -4,6 +4,15 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# --force-recreate restarts every container even when its image and config are
+# unchanged. Volumes are kept either way.
+up_flags=(-d --remove-orphans)
+case "${1:-}" in
+  "") ;;
+  --force-recreate) up_flags+=(--force-recreate) ;;
+  *) echo "Usage: ./install.sh [--force-recreate]" >&2; exit 1 ;;
+esac
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -57,15 +66,20 @@ if [ -d "$legacy_synapse_data" ] && [ -n "$(find "$legacy_synapse_data" -mindept
   fi
 fi
 
-if [ ! -f "certbot/conf/live/${BYTEM_DOMAIN}/fullchain.pem" ] || \
-   [ ! -f "certbot/conf/live/${MATRIX_HOMESERVER}/fullchain.pem" ]; then
-  warn "TLS certificates are missing; starting certificate setup."
-  "$SCRIPT_DIR/certbot.sh"
-fi
+# The two bytEM names and every governance domain served from domain_files/<domain>/.
+for domain in "$BYTEM_DOMAIN" "$MATRIX_HOMESERVER" domain_files/*/; do
+  domain=$(basename "$domain")
+  [ "$domain" != "*" ] || continue
+  if [ ! -f "certbot/conf/live/${domain}/fullchain.pem" ]; then
+    warn "The TLS certificate for $domain is missing; starting certificate setup."
+    "$SCRIPT_DIR/certbot.sh"
+    break
+  fi
+done
 
 log "Starting or upgrading the bytEM stack"
 mkdir -p logs/nginx
-docker compose --env-file .env up -d --remove-orphans
+docker compose --env-file .env up "${up_flags[@]}"
 
 log "Waiting for service health checks"
 deadline=$((SECONDS + 240))
