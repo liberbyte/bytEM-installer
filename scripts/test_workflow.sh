@@ -27,20 +27,20 @@ else
 fi
 
 # Configuration - all from environment, no defaults
-if [ -z "${BYTEM_DOMAIN:-}" ] || [ -z "${MATRIX_DOMAIN:-}" ]; then
-    echo -e "${RED}Error: BYTEM_DOMAIN and MATRIX_DOMAIN must be set in .env${NC}"
+if [ -z "${BYTEM_DOMAIN:-}" ] || [ -z "${MATRIX_HOMESERVER:-}" ]; then
+    echo -e "${RED}Error: BYTEM_DOMAIN and MATRIX_HOMESERVER must be set in .env${NC}"
     exit 1
 fi
 
 API_HOST="https://${BYTEM_DOMAIN}"
-MATRIX_HOST="https://${MATRIX_DOMAIN}"
+MATRIX_HOST="https://${MATRIX_HOMESERVER}"
 MATRIX_SERVER="${MATRIX_URL:-http://bytem-synapse:8008}"
-TEST_USER="${1:-${TEST_USERNAME:-}}"
-TEST_PASS="${2:-${TEST_PASSWORD:-}}"
-BOT_USER_ID="${BOT_USER_ID:-}"
+TEST_USER="${1:-${ADMIN_USERNAME:-}}"
+TEST_PASS="${2:-${ADMIN_PASSWORD:-}}"
+BOT_USER_ID="@${BOT_USERNAME:-bot}:${MATRIX_HOMESERVER}"
 
 if [ -z "$TEST_USER" ] || [ -z "$TEST_PASS" ] || [ -z "$BOT_USER_ID" ]; then
-    echo -e "${RED}Error: separate test credentials and BOT_USER_ID are required in .env.${NC}"
+    echo -e "${RED}Error: test credentials are required in .env.${NC}"
     exit 1
 fi
 

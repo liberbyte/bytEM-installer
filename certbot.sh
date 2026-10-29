@@ -18,15 +18,15 @@ set -a
 source .env
 set +a
 
-[ -n "${DOMAIN_NAME:-}" ] || die "DOMAIN_NAME is missing from .env."
-[ -n "${MATRIX_SERVER_NAME:-}" ] || die "MATRIX_SERVER_NAME is missing from .env."
+[ -n "${BYTEM_DOMAIN:-}" ] || die "BYTEM_DOMAIN is missing from .env."
+[ -n "${MATRIX_HOMESERVER:-}" ] || die "MATRIX_HOMESERVER is missing from .env."
 [ -n "${SSL_EMAIL:-}" ] || die "SSL_EMAIL is missing from .env."
 
 mkdir -p certbot/conf certbot/www
 
 if [ "${1:-}" = "--self-signed" ]; then
   command -v openssl >/dev/null 2>&1 || die "openssl is required for self-signed certificates."
-  for domain in "$DOMAIN_NAME" "$MATRIX_SERVER_NAME"; do
+  for domain in "$BYTEM_DOMAIN" "$MATRIX_HOMESERVER"; do
     mkdir -p "certbot/conf/live/${domain}"
     openssl req -x509 -nodes -days 30 -newkey rsa:2048 \
       -keyout "certbot/conf/live/${domain}/privkey.pem" \
@@ -37,8 +37,8 @@ if [ "${1:-}" = "--self-signed" ]; then
 else
   command -v docker >/dev/null 2>&1 || die "Docker is not installed."
 
-  if [ -f "certbot/conf/live/${DOMAIN_NAME}/fullchain.pem" ] && \
-     [ -f "certbot/conf/live/${MATRIX_SERVER_NAME}/fullchain.pem" ]; then
+  if [ -f "certbot/conf/live/${BYTEM_DOMAIN}/fullchain.pem" ] && \
+     [ -f "certbot/conf/live/${MATRIX_HOMESERVER}/fullchain.pem" ]; then
     echo "Renewing existing Let's Encrypt certificates through the nginx webroot..."
     docker run --rm \
       -v "$SCRIPT_DIR/certbot/conf:/etc/letsencrypt" \
@@ -46,8 +46,8 @@ else
       certbot/certbot renew --webroot --webroot-path /var/www/certbot
   else
     warn "Both DNS names must point to this host and inbound port 80 must be open:"
-    echo "  $DOMAIN_NAME"
-    echo "  $MATRIX_SERVER_NAME"
+    echo "  $BYTEM_DOMAIN"
+    echo "  $MATRIX_HOMESERVER"
     echo
 
     docker compose stop bytem-nginx >/dev/null 2>&1 || true
@@ -56,7 +56,7 @@ else
     if docker ps --format '{{.Names}}' | grep -qx bytem-app; then
       docker stop bytem-app >/dev/null
     fi
-    for domain in "$DOMAIN_NAME" "$MATRIX_SERVER_NAME"; do
+    for domain in "$BYTEM_DOMAIN" "$MATRIX_HOMESERVER"; do
       echo "Requesting a certificate for ${domain}..."
       docker run --rm \
         -p 80:80 \
@@ -73,7 +73,7 @@ else
   fi
 fi
 
-for domain in "$DOMAIN_NAME" "$MATRIX_SERVER_NAME"; do
+for domain in "$BYTEM_DOMAIN" "$MATRIX_HOMESERVER"; do
   [ -f "certbot/conf/live/${domain}/fullchain.pem" ] || die "Certificate missing for $domain."
   [ -f "certbot/conf/live/${domain}/privkey.pem" ] || die "Private key missing for $domain."
 done

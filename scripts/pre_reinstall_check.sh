@@ -14,7 +14,7 @@ set +a
 echo "PRE-UPGRADE STATE ($(date -Iseconds))"
 echo
 echo "TLS certificates:"
-for domain in "$DOMAIN_NAME" "$MATRIX_SERVER_NAME"; do
+for domain in "$BYTEM_DOMAIN" "$MATRIX_HOMESERVER"; do
   certificate="certbot/conf/live/${domain}/fullchain.pem"
   if [ -f "$certificate" ]; then
     echo "  OK  $domain ($(stat -c %y "$certificate" | cut -d. -f1))"
