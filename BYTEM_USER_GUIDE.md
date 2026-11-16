@@ -467,6 +467,51 @@ ahrensfelde
 > [!TIP]
 > **Need help creating Class or Schema definitions?** [Video Guide 2](#video-guide-2-creating-class-and-schema-files) shows how to organise the files and check their intended URLs. A Schema is optional and refines a Class.
 
+#### Configure a Chart (Optional)
+
+Add a `chart` key at the top level of the **Schema** referenced by your DEID. bytEM uses these settings to draw the chart in the Demand Room without AI.
+
+1. Open the data you plan to supply. Copy the exact field names for the record labels and numeric values you want to display.
+2. Add a `chart` block to the schema. Use the settings below to match the structure of your data.
+3. Publish the updated schema and open its public URL to confirm it contains your changes. Then [exchange the DEID and open Chart](#view-a-schema-defined-chart).
+
+| Setting | What to enter |
+| --- | --- |
+| `type` | The chart type. Use `bar`, `line`, `radial`, or `sunburst`. |
+| `values` | An array of field names for the numbers to plot. Use the names exactly as they appear in your data. |
+| `label` | The field that names each record or supplies the x-axis labels. Omit it for a single record with one bar per value field. |
+| `aggregate` | Optional. Use `sum`, `mean`, or `count` to combine records that share a label. |
+| `unit` | Optional. Use the field that contains the measurement unit to group values into separate panels by unit. |
+
+**Example — Electricity capacity by energy source**
+
+Add the `chart` key from this example alongside the schema’s existing keys. bytEM draws one bar per energy source and sums the gross capacity in kW for that source.
+
+```json
+{
+  "chart": {
+    "type": "bar",
+    "label": "energy_source",
+    "values": ["gross_capacity_kw"],
+    "aggregate": "sum"
+  }
+}
+```
+
+[View the published electricity schema](https://cities.app/schema/energy/renewable-energy-installations).
+
+**More examples**
+
+| Data | What the chart shows | Value of `chart` |
+| --- | --- | --- |
+| Crime statistics | One bar per group | `{"type":"bar","label":"label","values":["cases"]}` |
+| Air quality | One bar per pollutant in a single record | `{"type":"bar","values":["pm10","no2","pm25","o3","so2"]}` |
+| River gauge | Water level over time | `{"type":"line","label":"timestamp","values":["value"]}` |
+| Crop types | Total area in hectares per crop type | `{"type":"bar","label":"crop_type","values":["area_ha"],"aggregate":"sum"}` |
+| Drinking-water quality | One panel per unit, with bars labelled by parameter name | `{"type":"bar","label":"name","values":["wert","wert_min","wert_max"],"unit":"einheit"}` |
+
+The drinking-water example uses the value fields in the published schema. For data with a single numeric field named `wert`, use `"values": ["wert"]`. [View the published drinking-water schema](https://cities.app/schema/water/drinking-water-quality).
+
 ### 8. Upload Data and Make It Exchangeable
 
 After setting the DEID and Class, add the supply data.
@@ -811,6 +856,13 @@ The exchanged data may be displayed in different tabs depending on the type of d
 > [!NOTE]
 > Some tabs may require additional user permissions.
 
+
+#### View a Schema-Defined Chart
+
+1. Complete the Exchange and open the **Exchanged** tab in the Demand Room.
+2. Expand **Chart** to see the chart defined in the schema.
+
+The **Chart** section requires a `chart` key in the schema. If bytEM cannot find a configured field in the exchanged data, it shows a message explaining why the chart could not be drawn. Compare the field names in the schema with the exchanged data. [Configure a Chart](#configure-a-chart-optional).
 
 ## Reference
 
